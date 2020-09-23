@@ -5,7 +5,12 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -13,8 +18,12 @@ import java.util.Objects;
  */
 public class CoLDPRegion {
     
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPRegion.class);
+      
     private String ID;
     private String name;
+    
+    private Set<CoLDPDistribution> distributions;
 
     public CoLDPRegion() {
     }
@@ -33,6 +42,25 @@ public class CoLDPRegion {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Set<CoLDPDistribution> getDistributions() {
+        return distributions;
+    }
+
+    void registerDistribution(CoLDPDistribution distribution) {
+        if (distribution != null) {
+            if (distributions == null) {
+                distributions = new HashSet<>();
+            }
+            distributions.add(distribution);
+        }
+    }
+ 
+    void deregisterDistribution(CoLDPDistribution distribution) {
+        if (distribution != null && distributions != null) {
+            distributions.remove(distribution);
+        }
     }
 
     @Override
@@ -60,5 +88,12 @@ public class CoLDPRegion {
         return true;
     }
     
+    public static String getCsvHeader() {
+        return "ID,name"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(ID, name);
+    }
     
 }

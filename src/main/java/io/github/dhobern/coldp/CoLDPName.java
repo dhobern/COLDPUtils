@@ -5,13 +5,21 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author stang
  */
 public class CoLDPName {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPName.class);
+
     private Integer ID;
     private Integer basionymID;
     private String scientificName;
@@ -28,6 +36,15 @@ public class CoLDPName {
     private String status;
     private String remarks;
     private String link;
+    
+    private CoLDPName basionym;
+    private Set<CoLDPName> combinations;
+    private CoLDPReference reference;
+    private Set<CoLDPNameReference> nameReferences;
+    private Set<CoLDPNameRelation> nameRelations;
+    private Set<CoLDPNameRelation> relatedNameRelations;
+    private CoLDPTaxon taxon;
+    private Set<CoLDPSynonym> synonyms;
 
     public CoLDPName() {
     }
@@ -41,11 +58,50 @@ public class CoLDPName {
     }
 
     public Integer getBasionymID() {
-        return basionymID;
+        return (basionym == null) ? basionymID : basionym.getID();
     }
 
     public void setBasionymID(Integer basionymID) {
+        if (basionym == null) {
+            this.basionymID = basionymID;
+        } else {
+            LOG.error("Attempted to set basionymID to " + basionymID + " when name associated with basionym " + basionym);
+        }
         this.basionymID = basionymID;
+    }
+
+    public CoLDPName getBasionym() {
+        return basionym;
+    }
+
+    public void setBasionym(CoLDPName basionym) {
+        if (this.basionym != null && !this.basionym.equals(this)) {
+            this.basionym.deregisterCombination(this);
+        }
+        this.basionym = basionym;
+        basionymID = null;
+        if (basionym != null && !basionym.equals(this)) {
+            basionym.registerCombination(this);
+        }
+    }
+
+    public Set<CoLDPName> getCombinations() {
+        return combinations;
+    }
+
+    void registerCombination(CoLDPName combination) {
+        if (combination != null) {
+            if (combinations == null) {
+                combinations = new HashSet<>();
+            }
+            combinations.add(combination);
+        }
+    }
+ 
+    void deregisterCombination(CoLDPName combination) {
+        if (combination != null && combinations != null) {
+            combinations.remove(combination);
+        }
     }
 
     public String getScientificName() {
@@ -105,11 +161,31 @@ public class CoLDPName {
     }
 
     public Integer getReferenceID() {
-        return referenceID;
+        return reference == null ? referenceID : reference.getID();
     }
 
     public void setReferenceID(Integer referenceID) {
+        if (reference == null) {
+            this.referenceID = referenceID;
+        } else {
+            LOG.error("Attempted to set referenceID to " + referenceID + " when name associated with reference " + reference);
+        }
         this.referenceID = referenceID;
+    }
+
+    public CoLDPReference getReference() {
+        return reference;
+    }
+
+    public void setReference(CoLDPReference reference) {
+        if (this.reference != null) {
+            this.reference.deregisterName(this);
+        }
+        this.reference = reference;
+        referenceID = null;
+        if (reference != null) {
+            reference.registerName(this);
+        }
     }
 
     public String getPublishedInPage() {
@@ -160,9 +236,97 @@ public class CoLDPName {
         this.link = link;
     }
 
+    public Set<CoLDPNameReference> getNameReferences() {
+        return nameReferences;
+    }
+
+    void registerNameReference(CoLDPNameReference nameReference) {
+        if (nameReference != null) {
+            if (nameReferences == null) {
+                nameReferences = new HashSet<>();
+            }
+            nameReferences.add(nameReference);
+        }
+    }
+ 
+    void deregisterNameReference(CoLDPNameReference nameReference) {
+        if (nameReference != null && nameReferences != null) {
+            nameReferences.remove(nameReference);
+        }
+    }
+ 
+    public Set<CoLDPNameRelation> getNameRelations() {
+        return nameRelations;
+    }
+
+    void registerNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null) {
+            if (nameRelations == null) {
+                nameRelations = new HashSet<>();
+            }
+            nameRelations.add(nameRelation);
+        }
+    }
+ 
+    void deregisterNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null && nameRelations != null) {
+            nameRelations.remove(nameRelation);
+        }
+    }
+ 
+    public Set<CoLDPNameRelation> getRelatedNameRelations() {
+        return relatedNameRelations;
+    }
+
+    void registerRelatedNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null) {
+            if (relatedNameRelations == null) {
+                relatedNameRelations = new HashSet<>();
+            }
+            relatedNameRelations.add(nameRelation);
+        }
+    }
+ 
+    void deregisterRelatedNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null && relatedNameRelations != null) {
+            relatedNameRelations.remove(nameRelation);
+        }
+    }
+
+    public CoLDPTaxon getTaxon() {
+        return taxon;
+    }
+
+    public void setTaxon(CoLDPTaxon taxon) {
+        if (this.taxon != null) {
+            LOG.error("Attempted to set taxon to " + taxon + " when name associated with taxon " + this.taxon);
+        } else {
+            this.taxon = taxon;
+        }
+    }
+
+    public Set<CoLDPSynonym> getSynonyms() {
+        return synonyms;
+    }
+
+    void registerSynonym(CoLDPSynonym synonym) {
+        if (synonym != null) {
+            if (synonyms == null) {
+                synonyms = new HashSet<>();
+            }
+            synonyms.add(synonym);
+        }
+    }
+ 
+    void deregisterSynonym(CoLDPSynonym synonym) {
+        if (synonym != null && synonyms != null) {
+            synonyms.remove(synonym);
+        }
+    }
+    
     @Override
     public String toString() {
-        return "CoLDP_Name{" + "ID=" + ID + ", basionymID=" + basionymID + ", scientificName=" + scientificName + ", authorship=" + authorship + ", rank=" + rank + ", uninomial=" + uninomial + ", genus=" + genus + ", specificEpithet=" + specificEpithet + ", infraspecificEpithet=" + infraspecificEpithet + ", referenceID=" + referenceID + ", publishedInPage=" + publishedInPage + ", publishedInYear=" + publishedInYear + ", code=" + code + ", status=" + status + ", remarks=" + remarks + ", link=" + link + '}';
+        return "CoLDP_Name{" + "ID=" + ID + ", basionymID=" + getBasionymID() + ", scientificName=" + scientificName + ", authorship=" + authorship + ", rank=" + rank + ", uninomial=" + uninomial + ", genus=" + genus + ", specificEpithet=" + specificEpithet + ", infraspecificEpithet=" + infraspecificEpithet + ", referenceID=" + getReferenceID() + ", publishedInPage=" + publishedInPage + ", publishedInYear=" + publishedInYear + ", code=" + code + ", status=" + status + ", remarks=" + remarks + ", link=" + link + '}';
     }
 
     @Override
@@ -189,5 +353,29 @@ public class CoLDPName {
         }
         return true;
     }
-        
+    
+    public static String getCsvHeader() {
+        return "ID,basionymID,scientificName,authorship,rank,uninomial,genus,"
+                + "specificEpithet,infraspecificEpithet,referenceID,"
+                + "publishedInPage,publishedInYear,code,status,remarks,link"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(StringUtils.safeString(ID),
+                                 StringUtils.safeString(getBasionymID()),
+                                 scientificName,
+                                 authorship,
+                                 rank,
+                                 uninomial,
+                                 genus,
+                                 specificEpithet,
+                                 infraspecificEpithet,
+                                 StringUtils.safeString(getReferenceID()),
+                                 publishedInPage,
+                                 publishedInYear,
+                                 code,
+                                 status,
+                                 remarks,
+                                 link);
+    }
 }

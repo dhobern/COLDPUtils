@@ -7,7 +7,11 @@ package io.github.dhobern.coldp;
 
 import io.github.dhobern.utils.CSVReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -22,14 +26,46 @@ public class CoLDataPackage {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDataPackage.class);
     
-    private static Map<Integer,CoLDPName> names;
-    private static Map<Integer,CoLDPReference> references;
-    private static Map<Integer,Set<CoLDPNameReference>> nameReferencesByNameID;
-    private static Map<Integer,Set<CoLDPSynonym>> synonymsByTaxonID;
-    private static Map<Integer,Set<CoLDPNameRelation>> relationsByNameID;
-    private static Map<Integer,CoLDPTaxon> taxa;
-    private static Map<Integer,Set<CoLDPDistribution>> distributionsByTaxonID;
-    private static Map<String,CoLDPRegion> regions;
+    private Map<Integer,CoLDPName> names;
+    private Map<Integer,CoLDPReference> references;
+    private List<CoLDPNameReference> nameReferences;
+    private List<CoLDPSynonym> synonyms;
+    private List<CoLDPNameRelation> nameRelations;
+    private Map<Integer,CoLDPTaxon> taxa;
+    private List<CoLDPDistribution> distributions;
+    private Map<String,CoLDPRegion> regions;
+    
+    public Map<Integer, CoLDPName> getNames() {
+        return names;
+    }
+
+    public Map<Integer, CoLDPReference> getReferences() {
+        return references;
+    }
+
+    public List<CoLDPNameReference> getNameReferences() {
+        return nameReferences;
+    }
+
+    public List<CoLDPSynonym> getSynonyms() {
+        return synonyms;
+    }
+
+    public List<CoLDPNameRelation> getNameRelations() {
+        return nameRelations;
+    }
+
+    public Map<Integer, CoLDPTaxon> getTaxa() {
+        return taxa;
+    }
+
+    public List<CoLDPDistribution> getDistributions() {
+        return distributions;
+    }
+
+    public Map<String, CoLDPRegion> getRegions() {
+        return regions;
+    }
 
     private CoLDataPackage() {
     }
@@ -50,19 +86,18 @@ public class CoLDataPackage {
             
             CSVReader<CoLDPNameReference> nameReferenceReader 
                     = new CSVReader<>(folderName + "namereference.csv", CoLDPNameReference.class, ",");
-            nameReferencesByNameID = nameReferenceReader.getIntegerKeyedSets(CoLDPNameReference::getNameID);
+            nameReferences = nameReferenceReader.getList();
 
             CSVReader<CoLDPNameRelation> nameRelationReader 
                     = new CSVReader<>(folderName + "namerelation.csv", CoLDPNameRelation.class, ",");
-            relationsByNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getNameID);
+            nameRelations = nameRelationReader.getList();
  
             CSVReader<CoLDPTaxon> taxonReader 
-                    = new CSVReader<>(folderName + "taxon.csv",
-                            CoLDPTaxon.class, ",");
+                    = new CSVReader<>(folderName + "taxon.csv", CoLDPTaxon.class, ",");
             taxa = taxonReader.getIntegerMap(CoLDPTaxon::getID);
 
             CSVReader<CoLDPSynonym> synonymReader = new CSVReader<>(folderName + "synonym.csv", CoLDPSynonym.class, ",");
-            synonymsByTaxonID = synonymReader.getIntegerKeyedSets(CoLDPSynonym::getTaxonID);
+            synonyms = synonymReader.getList();
  
             CSVReader<CoLDPRegion> regionReader 
                     = new CSVReader<>(folderName + "region.csv", CoLDPRegion.class, ",");
@@ -70,11 +105,126 @@ public class CoLDataPackage {
 
             CSVReader<CoLDPDistribution> distributionReader 
                     = new CSVReader<>(folderName + "distribution.csv", CoLDPDistribution.class, ",");
-            distributionsByTaxonID = distributionReader.getIntegerKeyedSets(CoLDPDistribution::getTaxonID);
+            distributions = distributionReader.getList();
+ 
+            for(CoLDPName name : names.values()) {
+                if (name.getBasionymID() != null) {
+                    name.setBasionym(names.get(name.getBasionymID()));
+                }
+                if (name.getReferenceID() != null) {
+                    name.setReference(references.get(name.getReferenceID()));
+                }
+            }
             
+            for(CoLDPNameReference nr : nameReferences) {
+                nr.setName(names.get(nr.getNameID()));
+                nr.setReference(references.get(nr.getReferenceID()));
+            }
+            
+            for (CoLDPNameRelation r: nameRelations) {
+                r.setName(names.get(r.getNameID()));
+                r.setRelatedName(names.get(r.getRelatedNameID()));
+                if (r.getReferenceID() != null) {
+                    r.setReference(references.get(r.getReferenceID()));
+                }
+            }
+            
+            for(CoLDPTaxon taxon : taxa.values()) {
+                if (taxon.getParentID() != null) {
+                    taxon.setParent(taxa.get(taxon.getParentID()));
+                }
+                taxon.setName(names.get(taxon.getNameID()));
+                if (taxon.getReferenceID() != null) {
+                    taxon.setReference(references.get(taxon.getReferenceID()));
+                }
+            }
+            
+            for(CoLDPSynonym synonym : synonyms) {
+                if (synonym.getTaxonID() != null) {
+                    synonym.setTaxon(taxa.get(synonym.getTaxonID()));
+                }
+                if (synonym.getNameID() != null) {
+                    synonym.setName(names.get(synonym.getNameID()));
+                }
+                if (synonym.getReferenceID() != null) {
+                    synonym.setReference(references.get(synonym.getReferenceID()));
+                }
+            }
+            
+            for (CoLDPDistribution distribution : distributions) {
+                distribution.setTaxon(taxa.get(distribution.getTaxonID()));
+                distribution.setRegion(regions.get(distribution.getArea()));
+            }
+
         } catch (UnsupportedEncodingException | FileNotFoundException ex) {
             java.util.logging.Logger.getLogger(CoLDataPackage.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
+    public void write(String folderName) {
+        if (!folderName.endsWith("/")) {
+            folderName += "/";
+        }
+        
+        try {
+           
+            PrintWriter writer = new PrintWriter(folderName + "name-NEW.csv", "UTF-8");
+            writer.println(CoLDPName.getCsvHeader());
+            for(CoLDPName name : names.values()) {
+                writer.println(name.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "reference-NEW.csv", "UTF-8");
+            writer.println(CoLDPReference.getCsvHeader());
+            for(CoLDPReference reference : references.values()) {
+                writer.println(reference.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "namereference-NEW.csv", "UTF-8");
+            writer.println(CoLDPNameReference.getCsvHeader());
+            for(CoLDPNameReference nameReference : nameReferences) {
+                writer.println(nameReference.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "taxon-NEW.csv", "UTF-8");
+            writer.println(CoLDPTaxon.getCsvHeader());
+            for(CoLDPTaxon taxon : taxa.values()) {
+                writer.println(taxon.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "synonym-NEW.csv", "UTF-8");
+            writer.println(CoLDPSynonym.getCsvHeader());
+            for(CoLDPSynonym synonym : synonyms) {
+                writer.println(synonym.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "namerelation-NEW.csv", "UTF-8");
+            writer.println(CoLDPNameRelation.getCsvHeader());
+            for(CoLDPNameRelation nameRelation : nameRelations) {
+                writer.println(nameRelation.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "region-NEW.csv", "UTF-8");
+            writer.println(CoLDPRegion.getCsvHeader());
+            for(CoLDPRegion region : regions.values()) {
+                writer.println(region.toCsv());
+            }
+            writer.close();
+            
+            writer = new PrintWriter(folderName + "distribution-NEW.csv", "UTF-8");
+            writer.println(CoLDPDistribution.getCsvHeader());
+            for(CoLDPDistribution distribution : distributions) {
+                writer.println(distribution.toCsv());
+            }
+            writer.close();
+        } catch (IOException ex) {
+            LOG.error(ex.toString());
+        }
+    }
 }

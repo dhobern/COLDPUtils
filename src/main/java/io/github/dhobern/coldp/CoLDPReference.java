@@ -5,14 +5,21 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author stang
  */
 public class CoLDPReference {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPReference.class);
     
     private Integer ID;
     private String author;
@@ -21,6 +28,12 @@ public class CoLDPReference {
     private String source;
     private String details;
     private String link;
+    
+    private Set<CoLDPName> names;
+    private Set<CoLDPNameReference> nameReferences;
+    private Set<CoLDPNameRelation> nameRelations;
+    private Set<CoLDPTaxon> taxa;
+    private Set<CoLDPSynonym> synonyms;
 
     public CoLDPReference() {
     }
@@ -81,6 +94,101 @@ public class CoLDPReference {
         this.link = link;
     }
 
+    public Set<CoLDPName> getNames() {
+        return names;
+    }
+
+    void registerName(CoLDPName name) {
+        if (name != null) {
+            if (names == null) {
+                names = new HashSet<>();
+            }
+            names.add(name);
+        }
+    }
+ 
+    void deregisterName(CoLDPName name) {
+        if (name != null && names != null) {
+            names.remove(name);
+        }
+    }
+ 
+    public Set<CoLDPNameReference> getNameReferences() {
+        return nameReferences;
+    }
+
+    void registerNameReference(CoLDPNameReference nameReference) {
+        if (nameReference != null) {
+            if (nameReferences == null) {
+                nameReferences = new HashSet<>();
+            }
+            nameReferences.add(nameReference);
+        }
+    }
+ 
+    void deregisterNameReference(CoLDPNameReference nameReference) {
+        if (nameReference != null && nameReferences != null) {
+            nameReferences.remove(nameReference);
+        }
+    }
+ 
+    public Set<CoLDPNameRelation> getNameRelations() {
+        return nameRelations;
+    }
+
+    void registerNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null) {
+            if (nameRelations == null) {
+                nameRelations = new HashSet<>();
+            }
+            nameRelations.add(nameRelation);
+        }
+    }
+ 
+    void deregisterNameRelation(CoLDPNameRelation nameRelation) {
+        if (nameRelation != null && nameRelations != null) {
+            nameRelations.remove(nameRelation);
+        }
+    }
+ 
+    public Set<CoLDPTaxon> getTaxa() {
+        return taxa;
+    }
+
+    void registerTaxon(CoLDPTaxon taxon) {
+        if (taxon != null) {
+            if (taxa == null) {
+                taxa = new HashSet<>();
+            }
+            taxa.add(taxon);
+        }
+    }
+ 
+    void deregisterTaxon(CoLDPTaxon taxon) {
+        if (taxon != null && taxa != null) {
+            taxa.remove(taxon);
+        }
+    }
+
+    public Set<CoLDPSynonym> getSynonyms() {
+        return synonyms;
+    }
+
+    void registerSynonym(CoLDPSynonym synonym) {
+        if (synonym != null) {
+            if (synonyms == null) {
+                synonyms = new HashSet<>();
+            }
+            synonyms.add(synonym);
+        }
+    }
+ 
+    void deregisterSynonym(CoLDPSynonym synonym) {
+        if (synonym != null && synonyms != null) {
+            synonyms.remove(synonym);
+        }
+    }
+
     @Override
     public int hashCode() {
         int hash = 3;
@@ -121,4 +229,14 @@ public class CoLDPReference {
             return comparison; 
         } 
     }     
+
+    public static String getCsvHeader() {
+        return "ID,author,title,year,source,details,link"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(StringUtils.safeString(ID),
+                                 author,title,year,source,details,link);
+    }
+
 }

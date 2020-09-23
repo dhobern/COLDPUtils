@@ -5,7 +5,10 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -13,29 +16,72 @@ import java.util.Objects;
  */
 public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
     
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPNameReference.class);
+     
     private Integer nameID;
     private Integer referenceID;
     private String page;
     private String link;
     private String remarks;
+    
+    private CoLDPName name;
+    private CoLDPReference reference;
 
     public CoLDPNameReference() {
     }
 
     public Integer getNameID() {
-        return nameID;
+        return name == null ? nameID : name.getID();
     }
 
     public void setNameID(Integer nameID) {
-        this.nameID = nameID;
+        if (name == null) {
+            this.nameID = nameID;
+        } else {
+            LOG.error("Attempted to set nameID to " + nameID + " when nameReference associated with name " + name);
+        }
+    }
+
+    public CoLDPName getName() {
+        return name;
+    }
+
+    public void setName(CoLDPName name) {
+        if (this.name != null) {
+            this.name.deregisterNameReference(this);
+        }
+        this.name = name;
+        nameID = null;
+        if (name != null) {
+            name.registerNameReference(this);
+        }
     }
 
     public Integer getReferenceID() {
-        return referenceID;
+        return reference == null ? referenceID : reference.getID();
     }
 
     public void setReferenceID(Integer referenceID) {
-        this.referenceID = referenceID;
+        if (reference == null) {
+            this.referenceID = referenceID;
+        } else {
+            LOG.error("Attempted to set referenceID to " + referenceID + " when nameReference associated with reference " + reference);
+        }
+    }
+
+    public CoLDPReference getReference() {
+        return reference;
+    }
+
+    public void setReference(CoLDPReference reference) {
+        if (this.reference != null) {
+            this.reference.deregisterNameReference(this);
+        }
+        this.reference = reference;
+        referenceID = null;
+        if (reference != null) {
+            reference.registerNameReference(this);
+        }
     }
 
     public String getPage() {
@@ -65,8 +111,8 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
     @Override
     public int hashCode() {
         int hash = 3;
-        hash = 41 * hash + Objects.hashCode(this.nameID);
-        hash = 41 * hash + Objects.hashCode(this.referenceID);
+        hash = 41 * hash + Objects.hashCode(this.getNameID());
+        hash = 41 * hash + Objects.hashCode(this.getReferenceID());
         hash = 41 * hash + Objects.hashCode(this.page);
         hash = 41 * hash + Objects.hashCode(this.link);
         hash = 41 * hash + Objects.hashCode(this.remarks);
@@ -94,10 +140,10 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
         if (!Objects.equals(this.remarks, other.remarks)) {
             return false;
         }
-        if (!Objects.equals(this.nameID, other.nameID)) {
+        if (!Objects.equals(this.getNameID(), other.getNameID())) {
             return false;
         }
-        if (!Objects.equals(this.referenceID, other.referenceID)) {
+        if (!Objects.equals(this.getReferenceID(), other.getReferenceID())) {
             return false;
         }
         return true;
@@ -105,7 +151,7 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
 
     @Override
     public String toString() {
-        return "CoLDPNameReference{" + "nameID=" + nameID + ", referenceID=" + referenceID + ", page=" + page + ", link=" + link + ", remarks=" + remarks + '}';
+        return "CoLDPNameReference{" + "nameID=" + getNameID() + ", referenceID=" + getReferenceID() + ", page=" + page + ", link=" + link + ", remarks=" + remarks + '}';
     }
 
     @Override
@@ -113,4 +159,13 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
         return this.toString().compareTo(o.toString());
     }
 
+    public static String getCsvHeader() {
+        return "nameID,referenceID,page,link,remarks"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(StringUtils.safeString(getNameID()),
+                                 StringUtils.safeString(getReferenceID()),
+                                 page,link,remarks);
+    }
 }

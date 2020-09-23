@@ -5,9 +5,14 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -15,6 +20,8 @@ import java.util.Objects;
  */
 public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
     
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPTaxon.class);
+   
     private Integer ID;
     private Integer parentID;
     private Integer nameID;
@@ -35,6 +42,13 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
     private String genus;
     private String species;
     private String remarks;
+    
+    private Set<CoLDPTaxon> children;
+    private CoLDPTaxon parent;
+    private CoLDPName name;
+    private CoLDPReference reference;
+    private Set<CoLDPSynonym> synonyms;
+    private Set<CoLDPDistribution> distributions;
 
     public CoLDPTaxon() {
     }
@@ -48,19 +62,73 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
     }
 
     public Integer getParentID() {
-        return parentID;
+        return parent == null ? parentID : parent.getID();
     }
 
     public void setParentID(Integer parentID) {
-        this.parentID = parentID;
+        if (parent == null) {
+            this.parentID = parentID;
+        } else {
+            LOG.error("Attempted to set parentID to " + parentID + " when nameRelation associated with parent " + parent);
+        }
+    }
+
+    public CoLDPTaxon getParent() {
+        return parent;
+    }
+
+    public void setParent(CoLDPTaxon parent) {
+        if (this.parent != null) {
+            this.parent.deregisterChild(this);
+        }
+        this.parent = parent;
+        parentID = null;
+        if (parent != null) {
+            parent.registerChild(this);
+        }
+    }
+
+    public Set<CoLDPTaxon> getChildren() {
+        return children;
+    }
+
+    void registerChild(CoLDPTaxon child) {
+        if (child != null) {
+            if (children == null) {
+                children = new HashSet<>();
+            }
+            children.add(child);
+        }
+    }
+ 
+    void deregisterChild(CoLDPTaxon child) {
+        if (child != null && children != null) {
+            children.remove(child);
+        }
     }
 
     public Integer getNameID() {
-        return nameID;
+        return name == null ? nameID : name.getID();
     }
 
     public void setNameID(Integer nameID) {
-        this.nameID = nameID;
+        if (name == null) {
+            this.nameID = nameID;
+        } else {
+            LOG.error("Attempted to set nameID to " + nameID + " when nameRelation associated with name " + name);
+        }
+    }
+
+    public CoLDPName getName() {
+        return name;
+    }
+
+    public void setName(CoLDPName name) {
+        this.name = name;
+        nameID = null;
+        if (name != null) {
+            name.setTaxon(this);
+        }
     }
 
     public String getScrutinizer() {
@@ -80,11 +148,30 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
     }
 
     public Integer getReferenceID() {
-        return referenceID;
+        return reference == null ? referenceID : reference.getID();
     }
 
     public void setReferenceID(Integer referenceID) {
-        this.referenceID = referenceID;
+        if (reference == null) {
+            this.referenceID = referenceID;
+        } else {
+            LOG.error("Attempted to set referenceID to " + referenceID + " when taxon associated with reference " + reference);
+        }
+    }
+
+    public CoLDPReference getReference() {
+        return reference;
+    }
+
+    public void setReference(CoLDPReference reference) {
+        if (this.reference != null) {
+            this.reference.deregisterTaxon(this);
+        }
+        this.reference = reference;
+        referenceID = null;
+        if (reference != null) {
+            reference.registerTaxon(this);
+        }
     }
 
     public boolean isExtinct() {
@@ -199,6 +286,44 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
         this.remarks = remarks;
     }
 
+    public Set<CoLDPSynonym> getSynonyms() {
+        return synonyms;
+    }
+
+    void registerSynonym(CoLDPSynonym synonym) {
+        if (synonym != null) {
+            if (synonyms == null) {
+                synonyms = new HashSet<>();
+            }
+            synonyms.add(synonym);
+        }
+    }
+ 
+    void deregisterSynonym(CoLDPSynonym synonym) {
+        if (synonym != null && synonyms != null) {
+            synonyms.remove(synonym);
+        }
+    }
+
+    public Set<CoLDPDistribution> getDistributions() {
+        return distributions;
+    }
+
+    void registerDistribution(CoLDPDistribution distribution) {
+        if (distribution != null) {
+            if (distributions == null) {
+                distributions = new HashSet<>();
+            }
+            distributions.add(distribution);
+        }
+    }
+ 
+    void deregisterDistribution(CoLDPDistribution distribution) {
+        if (distribution != null && distributions != null) {
+            distributions.remove(distribution);
+        }
+    }
+
     @Override
     public int hashCode() {
         int hash = 5;
@@ -255,5 +380,35 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
                 
             return comparison;
         }
+    }
+
+    public static String getCsvHeader() {
+        return "ID,parentID,nameID,scrutinizer,scrutinizerDate,referenceID,"
+               + "extinct,temporalRangeEnd,lifezone,kingdom,phylum,class,"
+               + "order,superfamily,family,subfamily,tribe,genus,species,"
+               + "remarks"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(StringUtils.safeString(ID),
+                                 StringUtils.safeString(getParentID()),
+                                 StringUtils.safeString(getNameID()),
+                                 scrutinizer,
+                                 scrutinizerDate,
+                                 StringUtils.safeString(getReferenceID()),
+                                 extinct ? "true" : "false",
+                                 temporalRangeEnd,
+                                 lifezone,
+                                 kingdom,
+                                 phylum,
+                                 clazz,
+                                 order,
+                                 superfamily,
+                                 family,
+                                 subfamily,
+                                 tribe,
+                                 genus,
+                                 species,
+                                 remarks);
     }
 }

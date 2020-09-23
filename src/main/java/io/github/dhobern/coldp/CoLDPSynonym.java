@@ -5,7 +5,10 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.utils.StringUtils;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -13,29 +16,73 @@ import java.util.Objects;
  */
 public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
     
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPSynonym.class);
+  
     private Integer taxonID;
     private Integer nameID; 
     private String status;
     private Integer referenceID; 
     private String remarks;
+    
+    private CoLDPTaxon taxon;
+    private CoLDPName name;
+    private CoLDPReference reference;
 
     public CoLDPSynonym() {
     }
 
     public Integer getTaxonID() {
-        return taxonID;
+        return taxon == null ? taxonID : taxon.getID();
     }
 
     public void setTaxonID(Integer taxonID) {
-        this.taxonID = taxonID;
+        if (taxon == null) {
+            this.taxonID = taxonID;
+        } else {
+            LOG.error("Attempted to set taxonID to " + taxonID + " when synonym associated with taxon " + taxon);
+        }
+    }
+
+    public CoLDPTaxon getTaxon() {
+        return taxon;
+    }
+
+    public void setTaxon(CoLDPTaxon taxon) {
+        if (this.taxon != null) {
+            taxon.deregisterSynonym(this);
+        }
+        taxonID = null;
+        this.taxon = taxon;
+        if (taxon != null) {
+            taxon.registerSynonym(this);
+        }
     }
 
     public Integer getNameID() {
-        return nameID;
+        return name == null ? nameID : name.getID();
     }
 
     public void setNameID(Integer nameID) {
-        this.nameID = nameID;
+        if (name == null) {
+            this.nameID = nameID;
+        } else {
+            LOG.error("Attempted to set nameID to " + nameID + " when synonym associated with name " + name);
+        }
+    }
+
+    public CoLDPName getName() {
+        return name;
+    }
+
+    public void setName(CoLDPName name) {
+        if (this.name != null) {
+            name.deregisterSynonym(this);
+        }
+        this.name = name;
+        nameID = null;
+        if (name != null) {
+            name.registerSynonym(this);
+        }
     }
 
     public String getStatus() {
@@ -47,11 +94,30 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
     }
 
     public Integer getReferenceID() {
-        return referenceID;
+        return reference == null ? referenceID : reference.getID();
     }
 
     public void setReferenceID(Integer referenceID) {
-        this.referenceID = referenceID;
+        if (reference == null) {
+            this.referenceID = referenceID;
+        } else {
+            LOG.error("Attempted to set referenceID to " + referenceID + " when synonym associated with reference " + reference);
+        }
+    }
+
+    public CoLDPReference getReference() {
+        return reference;
+    }
+
+    public void setReference(CoLDPReference reference) {
+        if (this.reference != null) {
+            reference.deregisterSynonym(this);
+        }
+        this.reference = reference;
+        referenceID = null;
+        if (reference != null) {
+            reference.registerSynonym(this);
+        }
     }
 
     public String getRemarks() {
@@ -65,10 +131,10 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 59 * hash + Objects.hashCode(this.taxonID);
-        hash = 59 * hash + Objects.hashCode(this.nameID);
+        hash = 59 * hash + Objects.hashCode(this.getTaxonID());
+        hash = 59 * hash + Objects.hashCode(this.getNameID());
         hash = 59 * hash + Objects.hashCode(this.status);
-        hash = 59 * hash + Objects.hashCode(this.referenceID);
+        hash = 59 * hash + Objects.hashCode(this.getReferenceID());
         hash = 59 * hash + Objects.hashCode(this.remarks);
         return hash;
     }
@@ -88,13 +154,13 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
         if (!Objects.equals(this.status, other.status)) {
             return false;
         }
-        if (!Objects.equals(this.taxonID, other.taxonID)) {
+        if (!Objects.equals(this.getTaxonID(), other.getTaxonID())) {
             return false;
         }
-        if (!Objects.equals(this.nameID, other.nameID)) {
+        if (!Objects.equals(this.getNameID(), other.getNameID())) {
             return false;
         }
-        if (!Objects.equals(this.referenceID, other.referenceID)) {
+        if (!Objects.equals(this.getReferenceID(), other.getReferenceID())) {
             return false;
         }
         if (!Objects.equals(this.remarks, other.remarks)) {
@@ -105,13 +171,25 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
 
     @Override
     public String toString() {
-        return "CoLDPSynonym{" + "taxonID=" + taxonID + ", nameID=" + nameID 
-                + ", status=" + status + ", referenceID=" + referenceID 
+        return "CoLDPSynonym{" + "taxonID=" + getTaxonID() + ", nameID=" + getNameID()
+                + ", status=" + status + ", referenceID=" + getReferenceID ()
                 + ", remarks=" + remarks + '}';
     }
 
     @Override
     public int compareTo(CoLDPSynonym o) {
         return this.toString().compareTo(o.toString());
+    }
+
+    public static String getCsvHeader() {
+        return "taxonID,nameID,status,referenceID,remarks"; 
+    }
+    
+    public String toCsv() {
+        return StringUtils.toCsv(StringUtils.safeString(getTaxonID()),
+                                 StringUtils.safeString(getNameID()),
+                                 status,
+                                 StringUtils.safeString(getReferenceID()),
+                                 remarks);
     }
 }
