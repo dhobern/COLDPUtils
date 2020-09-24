@@ -6,11 +6,13 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.utils.CSVReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,13 +101,21 @@ public class CoLDataPackage {
             CSVReader<CoLDPSynonym> synonymReader = new CSVReader<>(folderName + "synonym.csv", CoLDPSynonym.class, ",");
             synonyms = synonymReader.getList();
  
-            CSVReader<CoLDPRegion> regionReader 
-                    = new CSVReader<>(folderName + "region.csv", CoLDPRegion.class, ",");
-            regions = regionReader.getMap(CoLDPRegion::getID);
+            if (new File(folderName + "region.csv").exists()) {
+                CSVReader<CoLDPRegion> regionReader 
+                        = new CSVReader<>(folderName + "region.csv", CoLDPRegion.class, ",");
+                regions = regionReader.getMap(CoLDPRegion::getID);
+            } else {
+                regions = new HashMap<>();
+            }
 
-            CSVReader<CoLDPDistribution> distributionReader 
-                    = new CSVReader<>(folderName + "distribution.csv", CoLDPDistribution.class, ",");
-            distributions = distributionReader.getList();
+            if (new File(folderName + "distribution.csv").exists()) {
+                CSVReader<CoLDPDistribution> distributionReader 
+                        = new CSVReader<>(folderName + "distribution.csv", CoLDPDistribution.class, ",");
+                distributions = distributionReader.getList();
+            } else {
+                regions = new HashMap<>();
+            }
  
             for(CoLDPName name : names.values()) {
                 if (name.getBasionymID() != null) {

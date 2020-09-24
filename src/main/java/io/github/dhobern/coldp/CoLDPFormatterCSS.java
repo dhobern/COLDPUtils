@@ -9,6 +9,7 @@ import io.github.dhobern.coldp.CoLDPReference.BibliographicSort;
 import io.github.dhobern.coldp.CoLDPTaxon.AlphabeticalSort;
 import io.github.dhobern.utils.CSVReader;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
@@ -56,11 +57,12 @@ public class CoLDPFormatterCSS {
      */
     public static void main(String argv[]) {
         
-        String taxonName = (argv.length > 0 ? argv[0] : "Alucitoidea" + "");
-        if (argv.length > 1 && argv[1].equalsIgnoreCase("TRUE")) {
+        String taxonName = (argv.length > 0 ? argv[0] : "Alucitoidea");
+        String dataFolderName = (argv.length > 1 ? argv[1] : "." + "");
+        if (argv.length > 2 && argv[2].equalsIgnoreCase("TRUE")) {
             generateFullHtmlPage = true;
         }
-        String fileNamePrefix = taxonName + "/";
+        String fileNamePrefix = dataFolderName + "/";
        
         try (PrintWriter writer = new PrintWriter(taxonName + (generateFullHtmlPage ? "" : "-catalogue") + ".html", "UTF-8")) {
             CSVReader<CoLDPName> nameReader
@@ -115,13 +117,21 @@ public class CoLDPFormatterCSS {
                     = new CSVReader<>(fileNamePrefix + "nameRelation.csv", CoLDPNameRelation.class, ",");
             relationsByRelatedNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getRelatedNameID);
  
-            CSVReader<CoLDPRegion> regionReader 
+            if (new File(fileNamePrefix + "region.csv").exists()) {
+                CSVReader<CoLDPRegion> regionReader 
                     = new CSVReader<>(fileNamePrefix + "region.csv", CoLDPRegion.class, ",");
-            regions = regionReader.getMap(CoLDPRegion::getID);
+                regions = regionReader.getMap(CoLDPRegion::getID);
+            } else {
+                regions = new HashMap<>();
+            }
 
-            CSVReader<CoLDPDistribution> distributionReader 
+            if (new File(fileNamePrefix + "distribution.csv").exists()) {
+                CSVReader<CoLDPDistribution> distributionReader 
                     = new CSVReader<>(fileNamePrefix + "distribution.csv", CoLDPDistribution.class, ",");
-            distributionsByTaxonID = distributionReader.getIntegerKeyedSets(CoLDPDistribution::getTaxonID);
+                distributionsByTaxonID = distributionReader.getIntegerKeyedSets(CoLDPDistribution::getTaxonID);
+            } else {
+                distributionsByTaxonID = new HashMap<>();
+            }
  
             if (generateFullHtmlPage) {
             writer.println("<!DOCTYPE html>");
