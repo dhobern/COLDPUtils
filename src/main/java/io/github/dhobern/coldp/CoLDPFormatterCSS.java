@@ -322,9 +322,6 @@ public class CoLDPFormatterCSS {
                         formatted = "Type for";
                     }
                     break;
-                case "Basionym":
-                    formatted = "Basionym for";
-                    break;
             }
         } else {
             switch(formatted) {
@@ -336,6 +333,9 @@ public class CoLDPFormatterCSS {
                     } else {
                         formatted = "Type";
                     }
+                    break;
+                case "Basionym":
+                    formatted = "Basionym for";
                     break;
             }
         }
