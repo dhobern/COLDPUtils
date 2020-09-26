@@ -5,12 +5,15 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +21,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
+public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPTaxon.class);
    
@@ -390,25 +393,103 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon> {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(ID),
-                                 StringUtils.safeString(getParentID()),
-                                 StringUtils.safeString(getNameID()),
-                                 scrutinizer,
-                                 scrutinizerDate,
-                                 StringUtils.safeString(getReferenceID()),
-                                 extinct ? "true" : "false",
-                                 temporalRangeEnd,
-                                 lifezone,
-                                 kingdom,
-                                 phylum,
-                                 clazz,
-                                 order,
-                                 superfamily,
-                                 family,
-                                 subfamily,
-                                 tribe,
-                                 genus,
-                                 species,
-                                 remarks);
+        return buildCSV(safeString(ID), safeString(getParentID()),
+                        safeString(getNameID()), scrutinizer, 
+                        scrutinizerDate, safeString(getReferenceID()),
+                        extinct ? "true" : "false", temporalRangeEnd,
+                        lifezone, kingdom, phylum, clazz, order, superfamily,
+                        family, subfamily, tribe, genus, species, remarks);
     }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            String divClass;
+            ContextType childContextType;
+            boolean recursive;
+            if (context.getContextType() == ContextType.HigherTaxa) {
+                divClass = "HigherTaxon";
+                childContextType = ContextType.HigherTaxa;
+                recursive = false;
+                        
+            } else {
+                divClass = upperFirst(name.getRank());
+                childContextType = ContextType.Taxon;
+                recursive = true;
+            }
+                
+            if (reference != null) {
+                context.addReference(reference);
+            }
+
+            writer.println(context.getIndent() + "<div class=\"" + divClass + "\">");
+            name.render(writer, new TreeRenderProperties(context, this, childContextType));
+
+            if (synonyms != null && synonyms.size() > 0) {
+                renderSynonyms(writer, new TreeRenderProperties(context, this, childContextType));
+            }
+
+            if (context.getReferenceList().size() > 0) {
+                renderReferences(writer, new TreeRenderProperties(context, this, childContextType));
+            }
+
+            if (remarks != null) {
+                renderNote(writer, new TreeRenderProperties(context, this, childContextType));
+            }
+            
+            if (distributions != null) {
+                renderDistributions(writer,  new TreeRenderProperties(context, this, childContextType));
+            }
+
+            if (recursive && children != null) {
+                for (CoLDPTaxon taxon : children) {
+                    taxon.render(writer, new TreeRenderProperties(context, this, ContextType.Taxon, true));
+                }
+            }
+
+            writer.println(context.getIndent() + "</div>");
+        }
+    }
+        
+    private void renderSynonyms(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + "<div class=\"Synonyms\">");
+
+            for (CoLDPSynonym synonym : synonyms) {
+                synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
+            }
+
+            writer.println(context.getIndent() + "</div>");
+        }
+    }    
+
+    private void renderReferences(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + "<div class=\"References\">");
+
+            for (CoLDPReference reference : context.getReferenceList()) {
+                reference.render(writer, new TreeRenderProperties(context, this, ContextType.References));
+            }
+
+            writer.println(context.getIndent() + "</div>");
+        }
+    }    
+
+    private void renderDistributions(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + "<div class=\"Distribution\">");
+
+            for (CoLDPDistribution distribution : distributions) {
+                distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));
+            }
+
+            writer.println(context.getIndent() + "</div>");
+        }
+    }    
+    
+    private void renderNote(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(remarks))));
+        }
+    }    
 }

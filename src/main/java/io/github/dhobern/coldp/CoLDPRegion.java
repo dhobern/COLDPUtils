@@ -93,7 +93,7 @@ public class CoLDPRegion {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(ID, name);
+        return StringUtils.buildCSV(ID, name);
     }
     
 }

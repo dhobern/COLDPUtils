@@ -5,7 +5,9 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPDistribution implements Comparable<CoLDPDistribution> {
+public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPDistribution.class);
      
@@ -23,9 +25,11 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution> {
     private String gazetteer;
     private String status;
     private Integer referenceID;
+    private String remarks;
     
     private CoLDPTaxon taxon;
     private CoLDPRegion region;
+    private CoLDPReference reference;
 
     public CoLDPDistribution() {
     }
@@ -101,11 +105,38 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution> {
     }
 
     public Integer getReferenceID() {
-        return referenceID;
+        return reference == null ? referenceID : reference.getID();
     }
 
     public void setReferenceID(Integer referenceID) {
-        this.referenceID = referenceID;
+        if (reference == null) {
+            this.referenceID = referenceID;
+        } else {
+            LOG.error("Attempted to set referenceID to " + referenceID + " when distribution associated with reference " + reference);
+        }
+    }
+
+    public CoLDPReference getReference() {
+        return reference;
+    }
+
+    public void setReference(CoLDPReference reference) {
+        if (this.reference != null) {
+            this.reference.deregisterDistribution(this);
+        }
+        this.reference = reference;
+        referenceID = null;
+        if (reference != null) {
+            reference.registerDistribution(this);
+        }
+    }
+
+    public String getRemarks() {
+        return remarks;
+    }
+
+    public void setRemarks(String remarks) {
+        this.remarks = remarks;
     }
 
     @Override
@@ -151,7 +182,7 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution> {
 
     @Override
     public String toString() {
-        return "CoLDPDistribution{" + "taxonID=" + getTaxonID() + ", area=" + getArea() + ", gazetteer=" + gazetteer + ", status=" + status + ", referenceID=" + getReferenceID() + '}';
+        return "CoLDPDistribution{" + "taxonID=" + getTaxonID() + ", area=" + getArea() + ", gazetteer=" + gazetteer + ", status=" + status + ", referenceID=" + getReferenceID() + ", remarks=" + remarks + "}";
     }
 
     @Override
@@ -160,12 +191,52 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution> {
     }
 
     public static String getCsvHeader() {
-        return "taxonId,area,gazetteer,status,referenceID"; 
+        return "taxonId,area,gazetteer,status,referenceID,remarks"; 
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(getTaxonID()),
-                                 getArea(), gazetteer, status,
-                                 StringUtils.safeString(referenceID));
+        return buildCSV(safeString(getTaxonID()), getArea(), gazetteer, status,
+                        safeString(referenceID), remarks);
     }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            String note = null;
+            if (reference != null) {
+                context.addReference(reference);
+                remarks =  reference.getAuthor();
+                if (reference.getYear() != null) {
+                    remarks += " " + reference.getYear();
+                }
+            }
+            
+            if (remarks != null) {
+                if (note == null) {
+                    note = linkURLs(remarks);
+                } else {
+                    note += ": " + linkURLs(remarks);
+                }
+            }
+            
+            String formatted = (region == null) ? area : region.getName();
+            if (status != null) {
+                formatted += " (" + status + ")";
+            }
+
+            if (note == null) {
+                writer.println(context.getIndent() + wrapDiv("Region", formatted));
+            } else {
+                writer.println(context.getIndent() + "<div class=\"Region\">");
+                renderNote(writer, new TreeRenderProperties(context, this, ContextType.Distribution), note);
+                writer.println(context.getIndent() + "</div>");
+        }
+        }
+    }
+    
+    private void renderNote(PrintWriter writer, TreeRenderProperties context, String note) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + note));
+        }
+    }    
 }

@@ -5,7 +5,10 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -16,7 +19,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPName {
+public class CoLDPName implements TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPName.class);
 
@@ -360,22 +363,118 @@ public class CoLDPName {
                 + "publishedInPage,publishedInYear,code,status,remarks,link"; 
     }
     
-    public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(ID),
-                                 StringUtils.safeString(getBasionymID()),
-                                 scientificName,
-                                 authorship,
-                                 rank,
-                                 uninomial,
-                                 genus,
-                                 specificEpithet,
-                                 infraspecificEpithet,
-                                 StringUtils.safeString(getReferenceID()),
-                                 publishedInPage,
-                                 publishedInYear,
-                                 code,
-                                 status,
-                                 remarks,
-                                 link);
+    public String toCSV() {
+        return buildCSV(safeString(ID), safeString(getBasionymID()),
+                        scientificName, authorship, rank, uninomial, genus,
+                        specificEpithet, infraspecificEpithet,
+                        safeString(getReferenceID()), publishedInPage,
+                        publishedInYear, code, status, remarks, link);
+    }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        CoLDPTaxon taxon = context.getCurrentTaxon();
+        CoLDPSynonym synonym = context.getCurrentSynonym();
+        String nameRemarks = safeTrim(linkURLs(remarks));
+        
+        if (context.getTreeRenderType() == TreeRenderType.HTML) {
+            String qualifier = "";
+            if (synonym != null) {
+                qualifier = "=&nbsp;";
+            }
+
+            String synonymRemarks = null;
+            if (synonym != null) {
+                synonymRemarks = safeTrim(linkURLs(synonym.getRemarks()));
+                if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
+                    synonymRemarks = upperFirst(synonym.getStatus());
+                }
+            }
+            if (synonymRemarks != null) {
+                synonymRemarks = " (" + synonymRemarks + ")"; 
+            } else {
+                synonymRemarks = "";
+            }
+            
+            if (reference != null) {
+                context.addReference(reference);
+            }
+
+            String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + wrapStrong(formatName(this));
+
+            String indent = context.getIndent();
+            writer.println(indent + "<div class=\"Name\">" + formatted);
+
+            if (nameReferences != null) {
+                for (CoLDPNameReference nameReference : nameReferences) {
+                    if (nameReference.getReference() == null) {
+                        LOG.error("Reference missing for NameReference: " + nameReference.toString());
+                    }
+                    nameReference.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                }
+            }
+
+            if (nameRelations != null) {
+                for (CoLDPNameRelation nameRelation : nameRelations) {
+                    if (nameRelation.getReference() != null) {
+                        context.addReference(nameRelation.getReference());
+                    }
+                    nameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                }
+            }
+
+            if (relatedNameRelations != null) {
+                for (CoLDPNameRelation relatedNameRelation : relatedNameRelations) {
+                    if (relatedNameRelation.getReference() != null) {
+                        context.addReference(relatedNameRelation.getReference());
+                    }
+                    relatedNameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                }
+            }
+
+            if (synonym == null && remarks != null) {
+                renderNote(writer, new TreeRenderProperties(context, this, ContextType.Name));
+            }
+
+            writer.println(indent + "</div>");
+        }
+    }
+    
+    private void renderNote(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(remarks))));
+        }
+    }    
+
+    public static String formatName(CoLDPName name) {
+        String scientificName = name.getScientificName();
+        switch (name.getRank()) {
+            case "genus":
+            case "species":
+            case "subspecies":
+                scientificName = wrapEmphasis(scientificName);
+                break;
+            case "variety":
+                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " var. " + wrapEmphasis(name.getInfraspecificEpithet());
+                break;
+            case "form":
+                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " f. " + wrapEmphasis(name.getInfraspecificEpithet());
+                break;
+            case "aberration":
+                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " ab. " + wrapEmphasis(name.getInfraspecificEpithet());
+                break;
+        }
+        
+        String authorship = name.getAuthorship();
+        if (authorship == null) {
+            authorship = "";
+        } else {
+            authorship = " " + authorship;
+        }
+
+        return scientificName + authorship;    
     }
 }

@@ -164,6 +164,9 @@ public class CoLDataPackage {
             for (CoLDPDistribution distribution : distributions) {
                 distribution.setTaxon(taxa.get(distribution.getTaxonID()));
                 distribution.setRegion(regions.get(distribution.getArea()));
+                if (distribution.getReferenceID() != null) {
+                    distribution.setReference(references.get(distribution.getReferenceID()));
+                }
             }
 
         } catch (UnsupportedEncodingException | FileNotFoundException ex) {
@@ -181,7 +184,7 @@ public class CoLDataPackage {
             PrintWriter writer = new PrintWriter(folderName + "name-NEW.csv", "UTF-8");
             writer.println(CoLDPName.getCsvHeader());
             for(CoLDPName name : names.values()) {
-                writer.println(name.toCsv());
+                writer.println(name.toCSV());
             }
             writer.close();
             

@@ -6,6 +6,8 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.utils.StringUtils;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
+public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPNameReference.class);
      
@@ -164,8 +166,35 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference> {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(getNameID()),
+        return StringUtils.buildCSV(StringUtils.safeString(getNameID()),
                                  StringUtils.safeString(getReferenceID()),
                                  page,link,remarks);
+    }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            context.addReference(reference);
+
+            String formatted = "Page reference";
+
+            if (remarks!= null) {
+                formatted += " (" + linkURLs(remarks) + ")";
+            }
+
+            formatted += ": " + reference.getAuthor() + " ";
+            if (reference.getYear() != null) {
+                formatted += "(" + reference.getYear() + ") ";
+            }
+
+            if (link != null && link.startsWith("http")) {
+                formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
+                        + wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+            } else {
+                formatted += wrapStrong(page);
+            }
+
+            writer.println(context.getIndent() + wrapDiv("Reference", formatted));
+        }
     }
 }

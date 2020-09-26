@@ -5,7 +5,8 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPReference {
+public class CoLDPReference implements TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPReference.class);
     
@@ -34,6 +35,7 @@ public class CoLDPReference {
     private Set<CoLDPNameRelation> nameRelations;
     private Set<CoLDPTaxon> taxa;
     private Set<CoLDPSynonym> synonyms;
+    private Set<CoLDPDistribution> distributions;
 
     public CoLDPReference() {
     }
@@ -189,6 +191,21 @@ public class CoLDPReference {
         }
     }
 
+    void registerDistribution(CoLDPDistribution distribution) {
+        if (distribution != null) {
+            if (distributions == null) {
+                distributions = new HashSet<>();
+            }
+            distributions.add(distribution);
+        }
+    }
+ 
+    void deregisterDistribution(CoLDPDistribution distribution) {
+        if (distribution != null && distributions != null) {
+            distributions.remove(distribution);
+        }
+    }
+
     @Override
     public int hashCode() {
         int hash = 3;
@@ -213,7 +230,7 @@ public class CoLDPReference {
         }
         return true;
     }
-    
+
     public static class BibliographicSort implements Comparator<CoLDPReference> 
     { 
         public int compare(CoLDPReference a, CoLDPReference b) 
@@ -235,8 +252,34 @@ public class CoLDPReference {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(ID),
-                                 author,title,year,source,details,link);
+        return buildCSV(safeString(ID),author,title,year,source,details,link);
     }
 
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            String formatted = getAuthor();
+            if (getYear() != null) {
+                formatted += " (" + getYear() + ") ";
+            }
+            formatted = wrapStrong(formatted);
+            formatted += getTitle();
+            if (!formatted.endsWith(".")) {
+                formatted += ".";
+            }   
+            if (getSource() != null && getSource().length() > 0) {
+                formatted += " <em>" + getSource() + "</em>";
+            }
+            if (getDetails() != null && getDetails().length() > 0) {
+                formatted += " " + getDetails();
+            }
+            if (!formatted.endsWith(".")) {
+                formatted += ".";
+            }
+            if (getLink() != null && getLink().length() > 0) {
+                formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+            }
+            writer.println(context.getIndent() + wrapDiv("Reference", formatted));
+        }
+    }
 }

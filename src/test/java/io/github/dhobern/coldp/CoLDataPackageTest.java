@@ -5,6 +5,9 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +27,6 @@ public class CoLDataPackageTest {
     private CoLDataPackage coldp; 
     
     public CoLDataPackageTest() {
-        coldp = new CoLDataPackage("mockdata");
     }
     
     @BeforeClass
@@ -37,6 +39,7 @@ public class CoLDataPackageTest {
     
     @Before
     public void setUp() {
+        coldp = new CoLDataPackage("mockdata");
     }
     
     @After
@@ -50,7 +53,21 @@ public class CoLDataPackageTest {
         
         assertEquals(reference.getTitle(), "New genera of Agdistidae and Pterophoridae");
     }
+
+    @Test
+    public void testNameRender() {
+        CoLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
+        
+        name.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "--> ", 3));
+    }
     
+    @Test
+    public void testTaxonRender() {
+        CoLDPTaxon taxon = coldp.getTaxa().get(268); // Ochyroticinae
+        
+        taxon.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None));
+    }
+
     @Test
     public void testRegionToTaxa() {
         List<CoLDPTaxon> expected = new ArrayList<>(); 
@@ -65,6 +82,7 @@ public class CoLDataPackageTest {
             assert(expected.contains(distribution.getTaxon()));
         }
     }
+    
     
     @Test
     public void testSomeMethod() {

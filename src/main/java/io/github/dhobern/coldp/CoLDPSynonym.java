@@ -5,7 +5,9 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
+public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPSynonym.class);
   
@@ -186,10 +188,24 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym> {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(getTaxonID()),
-                                 StringUtils.safeString(getNameID()),
-                                 status,
-                                 StringUtils.safeString(getReferenceID()),
-                                 remarks);
+        return buildCSV(safeString(getTaxonID()),
+                        safeString(getNameID()),
+                        status,
+                        safeString(getReferenceID()),
+                        remarks);
     }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            writer.println(context.getIndent() + "<div class=\"Synonym\">");
+
+            if (reference != null) {
+                context.addReference(reference);
+            }
+            name.render(writer, new TreeRenderProperties(context, this, ContextType.Synonym));
+
+            writer.println(context.getIndent() + "</div>");
+        }
+    }    
 }

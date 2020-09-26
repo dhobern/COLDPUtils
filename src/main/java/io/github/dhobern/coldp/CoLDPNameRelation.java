@@ -5,7 +5,8 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.utils.StringUtils;
+import static io.github.dhobern.utils.StringUtils.*;
+import java.io.PrintWriter;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPNameRelation implements Comparable<CoLDPNameRelation> {
+public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPNameRelation.class);
       
@@ -184,10 +185,59 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation> {
     }
     
     public String toCsv() {
-        return StringUtils.toCsv(StringUtils.safeString(getNameID()),
-                                 StringUtils.safeString(getRelatedNameID()),
-                                 type,
-                                 StringUtils.safeString(getReferenceID()),
-                                 remarks);
+        return buildCSV(safeString(getNameID()),
+                        safeString(getRelatedNameID()),
+                        type,
+                        safeString(getReferenceID()),
+                        remarks);
+    }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
+            CoLDPName contextName = context.getCurrentName();
+            String formatted = upperFirst(type);
+
+            if (name.equals(contextName)) {
+                switch(formatted) {
+                    case "Type":
+                        if (contextName.getRank().equals("genus")) {
+                            formatted = "Type genus for family";
+                        } else if (contextName.getRank().equals("species")) {
+                            formatted = "Type for genus";
+                        } else {
+                            formatted = "Type for";
+                        }
+                        break;
+                }
+            } else {
+                switch(formatted) {
+                    case "Type":
+                        if (contextName.getRank().equals("family")) {
+                            formatted = "Type genus";
+                        } else if (contextName.getRank().equals("genus")) {
+                            formatted = "Type species";
+                        } else {
+                            formatted = "Type";
+                        }
+                        break;
+                    case "Basionym":
+                        formatted = "Basionym for";
+                        break;
+                }
+            }
+
+            if (!remarks.equalsIgnoreCase(formatted)) {
+                formatted += " (" + upperFirst(linkURLs(remarks)) + ")";
+            }
+
+            formatted += ": " + CoLDPName.formatName(name);
+
+            writer.println(context.getIndent() + wrapDiv("NameRelationship", formatted));
+
+            if (reference != null) {
+                context.addReference(reference);
+            }
+        }
     }
 }

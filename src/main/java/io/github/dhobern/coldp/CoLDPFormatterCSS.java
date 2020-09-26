@@ -5,14 +5,12 @@
  */
 package io.github.dhobern.coldp;
 
+import static io.github.dhobern.utils.StringUtils.*;
 import io.github.dhobern.coldp.CoLDPReference.BibliographicSort;
 import io.github.dhobern.coldp.CoLDPTaxon.AlphabeticalSort;
 import io.github.dhobern.utils.CSVReader;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Comparator;
@@ -278,6 +276,9 @@ public class CoLDPFormatterCSS {
         if (nameReferences != null) {
             for (CoLDPNameReference nameReference : nameReferences) {
                 CoLDPReference reference = references.get(nameReference.getReferenceID());
+                if (reference == null) {
+                    LOG.error("Reference missing for NameReference: " + nameReference.toString());
+                }
                 referenceList.add(reference);
                 writeNameReference(writer, nameReference, reference, prefix);
             }
@@ -361,6 +362,10 @@ public class CoLDPFormatterCSS {
     private static void writeSynonym(PrintWriter writer, CoLDPSynonym synonym, String prefix, Set<CoLDPReference> referenceList) {
         CoLDPName name = namesByID.get(synonym.getNameID());
         String synonymRemarks = safeTrim(linkURLs(synonym.getRemarks()));
+        
+        if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
+            synonymRemarks = upperFirst(synonym.getStatus());
+        }
 
         writer.println(prefix + "<div class=\"Synonym\">");
         
@@ -374,16 +379,6 @@ public class CoLDPFormatterCSS {
         writer.println(prefix + "</div>");
     }
 
-    private static String safeTrim(String s) {
-        if (s != null) {
-            s = s.trim();
-            if (s.length() == 0) {
-                s = null;
-            } 
-        }
-        return s;
-    }
-    
     private static void writeReference(PrintWriter writer, CoLDPReference reference, String prefix) {
         String formatted = reference.getAuthor();
         if (reference.getYear() != null) {
@@ -469,82 +464,6 @@ public class CoLDPFormatterCSS {
     }
 
     private static void csvWrite(PrintWriter writer, String ... values) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String v: values) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append(",");
-            }
-            if (v == null || v.equalsIgnoreCase("NULL")) {
-                v = "";
-            }
-            if (v.contains(",")) {
-                sb.append("\""); 
-                sb.append(v); 
-                sb.append("\""); 
-            } else {             
-                sb.append(v);
-            }
-        }
-        writer.println(sb.toString());
-    }
-
-    private static String wrapStrong(String s) {
-        return "<strong>" + s + "</strong>";
-    }
-
-    private static String wrapEmphasis(String s) {
-        return "<em>" + s + "</em>";
-    }
-
-    private static String linkURLs(String s) {
-        String enabled = "";
-        
-        if (s != null) {
-            int start = 0;
-            int end = -1;
-            int current = 0;
-            start = s.indexOf("http://"); 
-            if (start < 0) {
-                start = s.indexOf("https://");
-            }
-            while (start >= 0) {
-                end = s.indexOf(" ", start);
-                if (end < 0) {
-                    end = s.length();
-                }
-                String url = s.substring(start, end);
-                String possibleComma = "";
-                if (url.endsWith(",")) {
-                    url = url.substring(0, url.length() - 1);
-                    possibleComma = ",";
-                }
-                String prior = "";
-                if (start > current) {
-                    prior = s.substring(current, start);
-                }
-                enabled += prior + "<a href=\"" + url +"\" target=\"_blank\">" + url + "</a>" + possibleComma;
-                current = end;
-                int newStart = s.indexOf("http://", start + 1);
-                if (newStart < 0) {
-                    newStart = s.indexOf("https://", start + 1);
-                }
-                start = newStart;
-            }
-            if (current < s.length()) {
-                enabled += s.substring(current);
-            }
-        }
-        
-        return enabled;
-    }
-    
-    private static String upperFirst(String s) {
-        if (s != null && s.length() > 1) {
-            s = s.substring(0, 1).toUpperCase() + s.substring(1);
-        }
-        return s;
+        writer.println(buildCSV(values));
     }
 }
