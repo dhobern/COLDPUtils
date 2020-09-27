@@ -227,7 +227,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
                 }
             }
 
-            if (!remarks.equalsIgnoreCase(formatted)) {
+            if (remarks != null && !remarks.equalsIgnoreCase(formatted)) {
                 formatted += " (" + upperFirst(linkURLs(remarks)) + ")";
             }
 
