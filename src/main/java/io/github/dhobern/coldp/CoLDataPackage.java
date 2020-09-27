@@ -11,11 +11,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +58,16 @@ public class CoLDataPackage {
 
     public Map<Integer, CoLDPTaxon> getTaxa() {
         return taxa;
+    }
+
+    public List<CoLDPTaxon> getRootTaxa() {
+        List<CoLDPTaxon> rootTaxa = new ArrayList<>();
+        for (CoLDPTaxon taxon : taxa.values()) {
+            if (taxon.getParent() == null) {
+                rootTaxa.add(taxon);
+            }
+        }
+        return rootTaxa;
     }
 
     public List<CoLDPDistribution> getDistributions() {
