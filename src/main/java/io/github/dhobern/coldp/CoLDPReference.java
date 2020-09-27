@@ -260,9 +260,9 @@ public class CoLDPReference implements TreeRenderable {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             String formatted = getAuthor();
             if (getYear() != null) {
-                formatted += " (" + getYear() + ") ";
+                formatted += " (" + getYear() + ")";
             }
-            formatted = wrapStrong(formatted);
+            formatted = wrapStrong(formatted) + " ";
             formatted += getTitle();
             if (!formatted.endsWith(".")) {
                 formatted += ".";
