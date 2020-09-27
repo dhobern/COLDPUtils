@@ -1,469 +1,230 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2020 dhobern@gmail.com.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package io.github.dhobern.coldp;
 
-import static io.github.dhobern.utils.StringUtils.*;
-import io.github.dhobern.coldp.CoLDPReference.BibliographicSort;
-import io.github.dhobern.coldp.CoLDPTaxon.AlphabeticalSort;
-import io.github.dhobern.utils.CSVReader;
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.TreeSet;
+import java.util.List;
 import java.util.logging.Level;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
- * @author Platyptilia
+ * CoLDPFormatter is a processor for handling taxonomic checklists structured
+ * as CoLDP (https://github.com/CatalogueOfLife/coldp) archive contents. It 
+ * allows for a range of manipulations to simplify reuse of the contents of 
+ * such checklists.
+ * 
+ * @author dhobern@gmail.com
  */
-public class CoLDPFormatterCSS {
-    
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPFormatterCSS.class);
-    
-    private static Map<String,CoLDPName> names;
-    private static Map<Integer,CoLDPName> namesByID;
-    private static Map<Integer,CoLDPReference> references;
-    private static Map<Integer,Set<CoLDPNameReference>> nameReferencesByNameID;
-    private static Map<Integer,Set<CoLDPSynonym>> synonymsByNameID;
-    private static Map<Integer,Set<CoLDPSynonym>> synonymsByTaxonID;
-    private static Map<Integer,Set<CoLDPNameRelation>> relationsByNameID;
-    private static Map<Integer,Set<CoLDPNameRelation>> relationsByRelatedNameID;
-    private static Map<Integer,CoLDPTaxon> taxa;
-    private static Map<Integer,CoLDPTaxon> taxaByNameID;
-    private static Map<Integer,Set<CoLDPTaxon>> childrenByParentID;
-    private static Map<Integer,Set<CoLDPDistribution>> distributionsByTaxonID;
-    private static Map<String,CoLDPRegion> regions;
+public class CoLDPTool {
 
-    private static final String INDENT = "    ";
-    private static final String EQUALS = "=&nbsp;";
-    private static boolean generateFullHtmlPage = false;
-
+    /**
+     * Enumeration of output formats and their current support level
+     */
+    private static enum OutputFormat {
+        HTML(true), CSV(true), TSV(false), JSON(false);
+        
+        private boolean supported = false;
+        
+        OutputFormat(boolean supported) {
+            this.supported = supported;
+        }
+        
+        public boolean isSupported() {
+            return supported;
+        }
+    }
+    
+    private static final Logger LOG = LoggerFactory.getLogger(CoLDPTool.class);
+    
+    private static String selectedTaxonName;
+    private static String coldpFolderName;
+    private static String outputFileName;
+    private static int indentCount = 0;
+    
+    private static OutputFormat format = OutputFormat.HTML;
+    
+    private static boolean overwrite = false;
+    
+    
     /**
      *
      * @param argv
      */
     public static void main(String argv[]) {
         
-        String taxonName = (argv.length > 0 ? argv[0] : "Alucitoidea");
-        String dataFolderName = (argv.length > 1 ? argv[1] : "." + "");
-        if (argv.length > 2 && argv[2].equalsIgnoreCase("TRUE")) {
-            generateFullHtmlPage = true;
-        }
-        String fileNamePrefix = dataFolderName + "/";
-       
-        try (PrintWriter writer = new PrintWriter(taxonName + (generateFullHtmlPage ? "" : "-catalogue") + ".html", "UTF-8")) {
-            CSVReader<CoLDPName> nameReader
-                    = new CSVReader<>(fileNamePrefix + "name.csv", CoLDPName.class, ",");   
-            names = nameReader.getMap(CoLDPName::getScientificName);
-            
-            nameReader = new CSVReader<>(fileNamePrefix + "name.csv", CoLDPName.class, ",");
-            namesByID = nameReader.getIntegerMap(CoLDPName::getID);
-            
-            CSVReader<CoLDPTaxon> taxonReader 
-                    = new CSVReader<>(fileNamePrefix + "taxon.csv",
-                            CoLDPTaxon.class, ",");
-            taxa = taxonReader.getIntegerMap(CoLDPTaxon::getID);
+        boolean continueExecution = parseComandLine(argv);
+        
+        PrintWriter writer = null;
 
-            taxonReader 
-                    = new CSVReader<>(fileNamePrefix + "taxon.csv", CoLDPTaxon.class, ",");
-            taxaByNameID = taxonReader.getIntegerMap(CoLDPTaxon::getNameID);
+        if (outputFileName == null) {
+            writer = new PrintWriter(System.out, true);
+        } else if (!overwrite && new File(outputFileName).exists()) {
+            reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+            continueExecution = false;
+        } else {
+            try {
+                writer = new PrintWriter(outputFileName, "UTF-8");
+            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
+            }
+        }
+        
+        if (continueExecution && writer != null) {
+            CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
             
-            Comparator<CoLDPTaxon> alphabeticalSort = new AlphabeticalSort(namesByID);
-            childrenByParentID = new HashMap<>();
-            for (CoLDPTaxon taxon : taxa.values()) {
-                if (taxon.getParentID() != null) {
-                    Set<CoLDPTaxon> children = childrenByParentID.get(taxon.getParentID());
-                    if (children == null) {
-                        children = new TreeSet<>(alphabeticalSort);
-                        childrenByParentID.put(taxon.getParentID(), children);
-                    }
-                    children.add(taxon);
+            List<CoLDPTaxon> taxa = coldp.getRootTaxa();
+            
+            for(CoLDPTaxon taxon : taxa) {
+                taxon.render(
+                    writer, 
+                    new TreeRenderProperties(TreeRenderType.HTML, 
+                                             ContextType.None, 
+                                             TreeRenderType.HTML.getIndentUnit(), 
+                                             indentCount));
+            }
+            
+            writer.close();
+        }
+    }
+
+    private static boolean parseComandLine(String[] argv) {
+        CommandLine command = null;
+        Options options = new Options();
+        options.addOption("x", "overwrite", false, "Overwrite existing output file")
+                .addOption("t", "taxon", true, "Name of focus taxon")
+                .addOption("f", "format", true, "Output format, one of HTML, JSON, CSV, TSV")
+                .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
+                .addOption("i", "initial-indent", true, "Initial indent level (two spaces per level)")
+                .addOption("h", "help", false, "Show help")
+                .addOption("v", "verbose", false, "Verbose");
+
+        CommandLineParser parser = new DefaultParser();
+        
+        try {
+            command = parser.parse(options, argv);
+        } catch (ParseException ex) {
+            reportError("Failed to parse command line: " + ex.toString());
+        }
+
+        if (command != null) {
+            boolean verbose = command.hasOption("v");
+            
+            for (Option o : command.getOptions()) {
+                switch (o.getOpt()) {
+                    case "t":
+                        selectedTaxonName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Selected taxon name: " + selectedTaxonName);
+                        }
+                        break;
+                    case "f":
+                        try {
+                            format = OutputFormat.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            format = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised output format for option -f: " + o.getValue());
+                            command = null;
+                        } else if (!format.isSupported()) {
+                            reportError("Currently unsupported output format: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Output format: " + format.name());
+                        }
+                        break;
+                    case "o":
+                        outputFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Output file name: " + outputFileName);
+                        }
+                        break;
+                    case "i":
+                        indentCount = Integer.parseInt(o.getValue());
+                        if (verbose) {
+                            reportInfo("Initial indent level: " + indentCount);
+                        }
+                        break;
+                    case "x":
+                        overwrite = true;
+                        if (verbose) {
+                            reportInfo("Overwrite existing output file: Yes");
+                        }
+                        break;
                 }
             }
-
-            CSVReader<CoLDPReference> referenceReader 
-                    = new CSVReader<>(fileNamePrefix + "reference.csv", CoLDPReference.class, ",");
-            references = referenceReader.getIntegerMap(CoLDPReference::getID);
-
-            CSVReader<CoLDPNameReference> nameReferenceReader 
-                    = new CSVReader<>(fileNamePrefix + "namereference.csv", CoLDPNameReference.class, ",");
-            nameReferencesByNameID = nameReferenceReader.getIntegerKeyedSets(CoLDPNameReference::getNameID);
-
-            CSVReader<CoLDPSynonym> synonymReader 
-                    = new CSVReader<>(fileNamePrefix + "synonym.csv", CoLDPSynonym.class, ",");
-            synonymsByNameID = synonymReader.getIntegerKeyedSets(CoLDPSynonym::getNameID);
- 
-            synonymReader = new CSVReader<>(fileNamePrefix + "synonym.csv", CoLDPSynonym.class, ",");
-            synonymsByTaxonID = synonymReader.getIntegerKeyedSets(CoLDPSynonym::getTaxonID);
- 
-            CSVReader<CoLDPNameRelation> nameRelationReader 
-                    = new CSVReader<>(fileNamePrefix + "namerelation.csv", CoLDPNameRelation.class, ",");
-            relationsByNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getNameID);
- 
-            nameRelationReader 
-                    = new CSVReader<>(fileNamePrefix + "nameRelation.csv", CoLDPNameRelation.class, ",");
-            relationsByRelatedNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getRelatedNameID);
- 
-            if (new File(fileNamePrefix + "region.csv").exists()) {
-                CSVReader<CoLDPRegion> regionReader 
-                    = new CSVReader<>(fileNamePrefix + "region.csv", CoLDPRegion.class, ",");
-                regions = regionReader.getMap(CoLDPRegion::getID);
-            } else {
-                regions = new HashMap<>();
+            String[] args = command.getArgs();
+            if (args != null) {
+                switch (command.getArgs().length) {
+                    case 0:
+                        reportError("CoLDP folder name not specified");
+                        command = null;
+                        break;
+                    case 1:
+                        coldpFolderName = command.getArgs()[0];
+                        if (verbose) {
+                            reportInfo("CoLDP folder name: " + coldpFolderName);
+                        }
+                        break;
+                    default:
+                        reportError("Too many command line arguments");
+                        command = null;
+                        break;
+                }
             }
-
-            if (new File(fileNamePrefix + "distribution.csv").exists()) {
-                CSVReader<CoLDPDistribution> distributionReader 
-                    = new CSVReader<>(fileNamePrefix + "distribution.csv", CoLDPDistribution.class, ",");
-                distributionsByTaxonID = distributionReader.getIntegerKeyedSets(CoLDPDistribution::getTaxonID);
-            } else {
-                distributionsByTaxonID = new HashMap<>();
-            }
- 
-            if (generateFullHtmlPage) {
-            writer.println("<!DOCTYPE html>");
-			writer.println("<html>");
-			writer.println("    <head>");
-			writer.println("        <title>Catalogue of World " + taxonName + "</title>");
-			writer.println("        <meta charset=\"UTF-8\">"); 
-			writer.println("        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-			writer.println("        <link rel=\"stylesheet\" href=\"./css/catalogue.css\">");
-			writer.println("        <script src=\"https://kit.fontawesome.com/9dcb058c00.js\" crossorigin=\"anonymous\"></script>");
-			writer.println("    </head>");
-			writer.println("    <body>");
-            }
-            
-            CoLDPName parentName = names.get(taxonName);
-            CoLDPTaxon parent = taxaByNameID.get(parentName.getID());
-            Stack<CoLDPTaxon> higherTaxa = getHigherTaxa(parent);
-            
-            writeTaxon(writer, null, higherTaxa, generateFullHtmlPage ? 2 : 0);
-
-            if (generateFullHtmlPage) {
-                writer.println("    </body>");
-                writer.println("</html>");
-            }
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-            java.util.logging.Logger.getLogger(CoLDPFormatterCSS.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        if (command == null || command.hasOption("h")) {
+            showHelp(options);
+            command = null;
+        }
+
+        return (command != null);
+    }
+
+    private static void reportError(String s) {
+        outputText("ERROR: " + s);
     }
     
-    private static Stack<CoLDPTaxon> getHigherTaxa(CoLDPTaxon taxon) {
-        Stack<CoLDPTaxon> higherTaxa = new Stack<>();
-        
-        higherTaxa.push(taxon);
-        while (taxon != null && taxon.getParentID() != null) {
-            taxon = taxa.get(taxon.getParentID());
-            if (taxon != null) {
-                higherTaxa.push(taxon);
-            }
-        }
-        
-        return higherTaxa;
+    private static void reportInfo(String s) {
+        outputText(" INFO: " + s);
+    }
+
+    private static void showHelp(Options options) {
+        outputText("");
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("CoLDPTool <options> coldpFolderName", options);
     }
     
-    private static void writeTaxon(PrintWriter writer, CoLDPTaxon taxon, Stack<CoLDPTaxon> higherTaxa, int depth) {
-        if (higherTaxa != null) {
-            taxon = higherTaxa.pop();
-            if (higherTaxa.empty()) {
-                higherTaxa = null;
-            }
-        }
-        
-        String prefix = "";
-        for (int i = 0; i < depth; i++) prefix += INDENT;
-	String childPrefix = prefix + INDENT;
-		
-        Set<CoLDPReference> referenceList = new TreeSet<>(new BibliographicSort());
-        if (taxon.getReferenceID() != null) {
-            referenceList.add(references.get(taxon.getReferenceID()));
-        }
-        
-        CoLDPName name = namesByID.get(taxon.getNameID());
-        String divClass = (higherTaxa == null) ? upperFirst(name.getRank()) : "HigherTaxon";
-	writer.println(prefix + "<div class=\"" + divClass + "\">");
-        writeName(writer, name, childPrefix, referenceList, false, null);
-        
-        Set<CoLDPSynonym> synonyms = synonymsByTaxonID.get(taxon.getID());
-        if (synonyms != null && synonyms.size() > 0) {
-            writer.println(childPrefix + "<div class=\"Synonyms\">");
-            
-            for (CoLDPSynonym synonym : synonyms) {
-                writeSynonym(writer, synonym, childPrefix + INDENT, referenceList);
-            }
-
-            writer.println(childPrefix + "</div>");
-        }
-                
-        if (referenceList.size() > 0) {
-            writer.println(childPrefix + "<div class=\"References\">");
-            
-            for (CoLDPReference reference : referenceList) {
-                writeReference(writer, reference, childPrefix + INDENT);
-            }
-
-            writer.println(childPrefix + "</div>");
-        }
-
-        if (taxon.getRemarks() != null) {
-            writer.println(prefix + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(taxon.getRemarks()))));
-        }
-
-        if (higherTaxa == null) {
-            Set<CoLDPTaxon> children = childrenByParentID.get(taxon.getID());
-            if (children != null) {
-                for (CoLDPTaxon child : children) {
-                    writeTaxon(writer, child, null, depth + 1);
-                }
-            }
-        } else {
-            writeTaxon(writer, null, higherTaxa, depth + 1);
-        }
-        
-        writer.println(prefix + "</div>");
-    }
-
-    private static void writeName(PrintWriter writer, CoLDPName name, 
-            String prefix, Set<CoLDPReference> referenceList, boolean isSynonym,
-            String remarks) {
-        
-        String qualifier = "";
-        if (isSynonym) {
-            qualifier = EQUALS;
-            if (name.getRemarks() != null) {
-                if (remarks != null) {
-                    remarks = remarks + "; " + safeTrim(linkURLs(name.getRemarks()));
-                } else {
-                    remarks = safeTrim(linkURLs(name.getRemarks()));
-                }
-            }
-        }
-        if (remarks != null) {
-            remarks = " (" + remarks + ")"; 
-        } else {
-            remarks = "";
-        }
-
-        String formatted = qualifier + upperFirst(name.getRank()) + remarks + ": " + wrapStrong(formatName(name));
-
-        writer.println(prefix + "<div class=\"Name\">" + formatted);
-        
-        writeNameInformation(writer, name, prefix + INDENT, referenceList, isSynonym);
-        
-        writer.println(prefix + "</div>");
-    }
-    
-    private static void writeNameInformation(PrintWriter writer, CoLDPName name, String prefix, 
-                Set<CoLDPReference> referenceList, boolean isSynonym) {
-        if (name.getReferenceID() != null) {
-            CoLDPReference reference = references.get(name.getReferenceID());
-            
-            referenceList.add(reference);
-        }
-        
-        Set<CoLDPNameReference> nameReferences = nameReferencesByNameID.get(name.getID());
-        if (nameReferences != null) {
-            for (CoLDPNameReference nameReference : nameReferences) {
-                CoLDPReference reference = references.get(nameReference.getReferenceID());
-                if (reference == null) {
-                    LOG.error("Reference missing for NameReference: " + nameReference.toString());
-                }
-                referenceList.add(reference);
-                writeNameReference(writer, nameReference, reference, prefix);
-            }
-        }
-
-        writeNameRelations(writer, name, prefix, referenceList);
-        
-        if (!isSynonym && name.getRemarks() != null) {
-            writer.println(prefix + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(name.getRemarks()))));
-        }
-    }
-    
-    private static void writeNameRelations(PrintWriter writer, CoLDPName name, String prefix, Set<CoLDPReference> referenceList) {
-        Set<CoLDPNameRelation> relations = relationsByNameID.get(name.getID());
-        if (relations != null) {
-            for (CoLDPNameRelation relation : relations) {
-                writeNameRelation(writer, relation, prefix, true, name.getRank(), referenceList);
-            }
-        }
-
-        relations = relationsByRelatedNameID.get(name.getID());
-        if (relations != null) {
-            for (CoLDPNameRelation relation : relations) {
-                writeNameRelation(writer, relation, prefix, false, name.getRank(), referenceList);
-            }
-        }
-    }
-
-    private static void writeNameRelation(PrintWriter writer, CoLDPNameRelation relation, 
-            String prefix, boolean isSubject, String rankName, Set<CoLDPReference> referenceList) {
-        CoLDPName name = namesByID.get(isSubject ? relation.getRelatedNameID() : relation.getNameID());
-        String formatted = upperFirst(relation.getType());
-        
-        if (isSubject) {
-            switch(formatted) {
-                case "Type":
-                    if (rankName.equals("genus")) {
-                        formatted = "Type genus for family";
-                    } else if (rankName.equals("species")) {
-                        formatted = "Type for genus";
-                    } else {
-                        formatted = "Type for";
-                    }
-                    break;
-            }
-        } else {
-            switch(formatted) {
-                case "Type":
-                    if (rankName.equals("family")) {
-                        formatted = "Type genus";
-                    } else if (rankName.equals("genus")) {
-                        formatted = "Type species";
-                    } else {
-                        formatted = "Type";
-                    }
-                    break;
-                case "Basionym":
-                    formatted = "Basionym for";
-                    break;
-            }
-        }
-        
-        if (formatted != null) {
-            if (relation.getRemarks() != null) {
-                if (!relation.getRemarks().equalsIgnoreCase(formatted)) {
-                    formatted += " (" + upperFirst(linkURLs(relation.getRemarks())) + ")";
-                }
-            }
-
-            formatted += ": " + formatName(name);
-
-            writer.println(prefix + wrapDiv("Relationship", formatted));
-
-            if (relation.getReferenceID() != null) {
-                CoLDPReference reference = references.get(relation.getReferenceID());
-                referenceList.add(reference);
-            }
-        }
-    }
-
-    private static void writeSynonym(PrintWriter writer, CoLDPSynonym synonym, String prefix, Set<CoLDPReference> referenceList) {
-        CoLDPName name = namesByID.get(synonym.getNameID());
-        String synonymRemarks = safeTrim(linkURLs(synonym.getRemarks()));
-        
-        if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
-            synonymRemarks = upperFirst(synonym.getStatus());
-        }
-
-        writer.println(prefix + "<div class=\"Synonym\">");
-        
-        writeName(writer, name, prefix + INDENT, referenceList, true, synonymRemarks);
-
-        if (synonym.getReferenceID() != null) {
-            CoLDPReference reference = references.get(synonym.getReferenceID());
-            referenceList.add(reference);
-        }
-        
-        writer.println(prefix + "</div>");
-    }
-
-    private static void writeReference(PrintWriter writer, CoLDPReference reference, String prefix) {
-        String formatted = reference.getAuthor();
-        if (reference.getYear() != null) {
-            formatted += " (" + reference.getYear() + ") ";
-        }
-        formatted = wrapStrong(formatted);
-        formatted += reference.getTitle();
-        if (!formatted.endsWith(".")) {
-            formatted += ".";
-        }   
-        if (reference.getSource() != null && reference.getSource().length() > 0) {
-            formatted += " <em>" + reference.getSource() + "</em>";
-        }
-        if (reference.getDetails() != null && reference.getDetails().length() > 0) {
-            formatted += " " + reference.getDetails();
-        }
-        if (!formatted.endsWith(".")) {
-            formatted += ".";
-        }
-        if (reference.getLink() != null && reference.getLink().length() > 0) {
-            formatted += " <a href=\"" + reference.getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
-        }
-        writer.println(prefix + wrapDiv("Reference", formatted));
-    }
-
-    private static void writeNameReference(PrintWriter writer, CoLDPNameReference nameReference, CoLDPReference reference, String prefix) {
-        String formatted = "Page reference";
-                
-        if (nameReference.getRemarks() != null) {
-            formatted += " (" + linkURLs(nameReference.getRemarks()) + ")";
-        }
-        
-        formatted += ": " + reference.getAuthor() + " ";
-        if (reference.getYear() != null) {
-            formatted += "(" + reference.getYear() + ") ";
-        }
-
-        if (nameReference.getLink() != null && nameReference.getLink().startsWith("http")) {
-            formatted += "<a href=\"" + nameReference.getLink() + "\" target=\"_blank\">" 
-                    + wrapStrong(nameReference.getPage()) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
-        } else {
-            formatted += wrapStrong(nameReference.getPage());
-        }
-
-        writer.println(prefix + wrapDiv("Reference", formatted));
-    }
-
-    private static String wrapDiv(String divClass, String name) {
-        name = "<div class=\"" + divClass + "\">" + name + "</div>";
-        return name;
-    }
-
-    private static String formatName(CoLDPName name) {
-        String scientificName = name.getScientificName();
-        switch (name.getRank()) {
-            case "genus":
-            case "species":
-            case "subspecies":
-                scientificName = wrapEmphasis(scientificName);
-                break;
-            case "variety":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " var. " + wrapEmphasis(name.getInfraspecificEpithet());
-                break;
-            case "form":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " f. " + wrapEmphasis(name.getInfraspecificEpithet());
-                break;
-            case "aberration":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " ab. " + wrapEmphasis(name.getInfraspecificEpithet());
-                break;
-        }
-        
-        String authorship = name.getAuthorship();
-        if (authorship == null) {
-            authorship = "";
-        } else {
-            authorship = " " + authorship;
-        }
-
-        return scientificName + authorship;    
-    }
-
-    private static void csvWrite(PrintWriter writer, String ... values) {
-        writer.println(buildCSV(values));
+    private static void outputText(String s) {
+        System.out.println(s);
     }
 }
