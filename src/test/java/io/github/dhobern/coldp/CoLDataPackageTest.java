@@ -121,7 +121,7 @@ public class CoLDataPackageTest {
             taxon.setID(i++);
         }
         
-        coldp.write("mockdata");
+        coldp.write("mockdata", "-NEW");
         
     }
     

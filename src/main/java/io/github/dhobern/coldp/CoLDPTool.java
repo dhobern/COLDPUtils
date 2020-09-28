@@ -25,12 +25,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -67,6 +65,13 @@ public class CoLDPTool {
             return supported;
         }
     }
+
+    /**
+     * Enumeration of output formats and their current support level
+     */
+    private static enum IdentifierStyle {
+        None, Int;
+    }
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPTool.class);
     
@@ -78,7 +83,10 @@ public class CoLDPTool {
     private static BufferedReader templateReader;
     private static int indentCount = 0;
     
+    private static IdentifierStyle identifierStyle = IdentifierStyle.None;
+    
     private static OutputFormat format = OutputFormat.HTML;
+    private static String newCsvSuffix = "-NEW";
     
     private static boolean overwrite = false;
     
@@ -90,50 +98,57 @@ public class CoLDPTool {
     public static void main(String argv[]) {
         
         boolean continueExecution = parseComandLine(argv);
-        
-        PrintWriter writer = null;
 
-        if (outputFileName == null) {
-            writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
-        } else if (!overwrite && new File(outputFileName).exists()) {
-            reportError("File exists: " + outputFileName + " - specify -x to overwrite");
-            continueExecution = false;
-        } else {
-            try {
-                writer = new PrintWriter(outputFileName, "UTF-8");
-            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
-            }
-        }
-
-        if (continueExecution && writer != null) {
-            
-            if (templateReader != null) {
-                writeTemplate(writer, templateReader, templateEyecatcherText);
-            }
+        CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
         
-            CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
-            
-            if(selectedTaxonName != null) {
-                CoLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
-                
-                if (taxon == null) {
-                    reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
-                } else {
-                    renderHigherTaxa(writer, taxon);
-                    renderTaxon(writer, taxon);
-                }
+        if (format == OutputFormat.HTML) {
+            PrintWriter writer = null;
+
+            if (outputFileName == null) {
+                writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+            } else if (!overwrite && new File(outputFileName).exists()) {
+                reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+                continueExecution = false;
             } else {
-                for(CoLDPTaxon taxon : coldp.getRootTaxa()) {
-                    renderTaxon(writer, taxon);
+                try {
+                    writer = new PrintWriter(outputFileName, "UTF-8");
+                } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                    reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
                 }
             }
-            
-            if (templateReader != null) {
-                writeTemplate(writer, templateReader, null);
+
+            if (continueExecution && writer != null) {
+
+                if (templateReader != null) {
+                    writeTemplate(writer, templateReader, templateEyecatcherText);
+                }
+
+                if(selectedTaxonName != null) {
+                    CoLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+
+                    if (taxon == null) {
+                        reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
+                    } else {
+                        renderHigherTaxa(writer, taxon);
+                        renderTaxon(writer, taxon);
+                    }
+                } else {
+                    for(CoLDPTaxon taxon : coldp.getRootTaxa()) {
+                        renderTaxon(writer, taxon);
+                    }
+                }
+
+                if (templateReader != null) {
+                    writeTemplate(writer, templateReader, null);
+                }
+
+                writer.close();
             }
-        
-            writer.close();
+        } else if (format == OutputFormat.CSV) {
+            if (identifierStyle == IdentifierStyle.Int) {
+                coldp.tidyIdentifiers();
+            }
+            coldp.write(outputFileName, newCsvSuffix);
         }
     }
     
@@ -180,8 +195,16 @@ public class CoLDPTool {
                                    + "this text is not found, content will be "
                                    + "inserted at the end of the output file")
                 .addOption("e", "eyecatcher", true, 
-                           "Text contained in line in template file at point"
-                                   + "where output content is to be inserted");
+                           "Text contained in line in template file at point "
+                                   + "where output content is to be inserted")
+                .addOption("S", "suffix", true, 
+                           "Suffix to file names when printing to CSV,"
+                                   + "defaults to \"-NEW\" - replace with "
+                                   + "care to avoid overwriting source CSV "
+                                   + "files")
+                .addOption("I", "identifer-style", true, "Update style of "
+                                   + "identifiers for references, names and "
+                                   + "taxa, one of Int");
 
         CommandLineParser parser = new DefaultParser();
         
@@ -253,6 +276,29 @@ public class CoLDPTool {
                         } catch (FileNotFoundException | UnsupportedEncodingException e) {
                             reportError("Could not open template file " + templateFileName + ": " + e.toString());
                             command = null;
+                        }
+                        break;
+                    case "I":
+                        try {
+                            identifierStyle = IdentifierStyle.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            identifierStyle = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised identifierStyle for option -I: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Selected identifier style: " + identifierStyle.name());
+                        }
+                        break;
+                    case "S":
+                        newCsvSuffix = o.getValue();
+                        if (newCsvSuffix.equals("-")) {
+                            newCsvSuffix = "";
+                        } 
+                        if (verbose) {
+                            reportInfo("Suffix for new CSV file names: " + newCsvSuffix);
                         }
                         break;
                 }

@@ -235,7 +235,7 @@ public class CoLDPReference implements TreeRenderable {
     { 
         public int compare(CoLDPReference a, CoLDPReference b) 
         { 
-            int comparison = a.getAuthor().compareTo(b.getAuthor());
+            int comparison = a.getAuthor().toLowerCase().compareTo(b.getAuthor().toLowerCase());
             if (comparison == 0) {
                 comparison = a.getYear().compareTo(b.getYear());
             } 
