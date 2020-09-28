@@ -18,9 +18,14 @@ package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.logging.Level;
@@ -63,9 +68,12 @@ public class CoLDPTool {
     
     private static final Logger LOG = LoggerFactory.getLogger(CoLDPTool.class);
     
+    private static String templateEyecatcherText = "CoLDPTool.Output";
+    
     private static String selectedTaxonName;
     private static String coldpFolderName;
     private static String outputFileName;
+    private static BufferedReader templateReader;
     private static int indentCount = 0;
     
     private static OutputFormat format = OutputFormat.HTML;
@@ -95,8 +103,13 @@ public class CoLDPTool {
                 reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
             }
         }
-        
+
         if (continueExecution && writer != null) {
+            
+            if (templateReader != null) {
+                writeTemplate(writer, templateReader, templateEyecatcherText);
+            }
+        
             CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
             
             List<CoLDPTaxon> taxa = coldp.getRootTaxa();
@@ -110,6 +123,10 @@ public class CoLDPTool {
                                              indentCount));
             }
             
+            if (templateReader != null) {
+                writeTemplate(writer, templateReader, null);
+            }
+        
             writer.close();
         }
     }
@@ -123,7 +140,17 @@ public class CoLDPTool {
                 .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
                 .addOption("i", "initial-indent", true, "Initial indent level (two spaces per level)")
                 .addOption("h", "help", false, "Show help")
-                .addOption("v", "verbose", false, "Verbose");
+                .addOption("v", "verbose", false, "Verbose")
+                .addOption("T", "template", true, 
+                           "Template in which to embed output (replacing first "
+                                   + "row containing text specified using"
+                                   + "-e option or (by default) "
+                                   + "\"" + templateEyecatcherText + "\") - if "
+                                   + "this text is not found, content will be "
+                                   + "inserted at the end of the output file")
+                .addOption("e", "eyecatcher", true, 
+                           "Text contained in line in template file at point"
+                                   + "where output content is to be inserted");
 
         CommandLineParser parser = new DefaultParser();
         
@@ -179,25 +206,45 @@ public class CoLDPTool {
                             reportInfo("Overwrite existing output file: Yes");
                         }
                         break;
-                }
-            }
-            String[] args = command.getArgs();
-            if (args != null) {
-                switch (command.getArgs().length) {
-                    case 0:
-                        reportError("CoLDP folder name not specified");
-                        command = null;
-                        break;
-                    case 1:
-                        coldpFolderName = command.getArgs()[0];
+                    case "e":
+                        templateEyecatcherText = o.getValue();
                         if (verbose) {
-                            reportInfo("CoLDP folder name: " + coldpFolderName);
+                            reportInfo("Text included in line for replacement in output template: " + templateEyecatcherText);
                         }
                         break;
-                    default:
-                        reportError("Too many command line arguments");
-                        command = null;
+                    case "T":
+                        String templateFileName = o.getValue();
+                        try {
+                            templateReader = new BufferedReader(new InputStreamReader(new FileInputStream(templateFileName), "UTF-8"));
+                            if (verbose) {
+                                reportInfo("Output template file name: " + templateFileName);
+                            }
+                        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+                            reportError("Could not open template file " + templateFileName + ": " + e.toString());
+                            command = null;
+                        }
                         break;
+                }
+            }
+            if (command != null) {
+                String[] args = command.getArgs();
+                if (args != null) {
+                    switch (command.getArgs().length) {
+                        case 0:
+                            reportError("CoLDP folder name not specified");
+                            command = null;
+                            break;
+                        case 1:
+                            coldpFolderName = command.getArgs()[0];
+                            if (verbose) {
+                                reportInfo("CoLDP folder name: " + coldpFolderName);
+                            }
+                            break;
+                        default:
+                            reportError("Too many command line arguments");
+                            command = null;
+                            break;
+                    }
                 }
             }
         }
@@ -208,6 +255,23 @@ public class CoLDPTool {
         }
 
         return (command != null);
+    }
+
+    private static void writeTemplate(PrintWriter writer, BufferedReader templateReader, String stopLine) {
+        try {
+            String line;
+            boolean continueReading = true;
+            
+            while (continueReading && (line = templateReader.readLine()) != null) {
+                if (stopLine == null || !line.contains(stopLine)) {
+                    writer.println(line);
+                } else {
+                    continueReading = false;
+                }
+            }
+        } catch (IOException e) {
+            reportError("Failed to copy template to output file: " + e.toString());    
+        }
     }
 
     private static void reportError(String s) {
@@ -225,6 +289,6 @@ public class CoLDPTool {
     }
     
     private static void outputText(String s) {
-        System.out.println(s);
+        System.err.println(s);
     }
 }
