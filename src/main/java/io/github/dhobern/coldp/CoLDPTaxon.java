@@ -5,6 +5,7 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.CoLDPDistribution.RegionSort;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
@@ -98,7 +99,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     void registerChild(CoLDPTaxon child) {
         if (child != null) {
             if (children == null) {
-                children = new HashSet<>();
+                children = new TreeSet<>(new AlphabeticalSortByScientificName());
             }
             children.add(child);
         }
@@ -315,7 +316,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     void registerDistribution(CoLDPDistribution distribution) {
         if (distribution != null) {
             if (distributions == null) {
-                distributions = new HashSet<>();
+                distributions = new TreeSet<>(new RegionSort());
             }
             distributions.add(distribution);
         }
@@ -385,6 +386,14 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
 
+    
+    public static class AlphabeticalSortByScientificName implements Comparator<CoLDPTaxon> { 
+        @Override
+        public int compare(CoLDPTaxon o1, CoLDPTaxon o2) {
+            return o1.getName().getScientificName().compareTo(o2.getName().getScientificName());
+        }
+    }
+
     public static String getCsvHeader() {
         return "ID,parentID,nameID,scrutinizer,scrutinizerDate,referenceID,"
                + "extinct,temporalRangeEnd,lifezone,kingdom,phylum,class,"
@@ -429,16 +438,16 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
                 renderSynonyms(writer, new TreeRenderProperties(context, this, childContextType));
             }
 
-            if (context.getReferenceList().size() > 0) {
-                renderReferences(writer, new TreeRenderProperties(context, this, childContextType));
-            }
-
             if (remarks != null) {
                 renderNote(writer, new TreeRenderProperties(context, this, childContextType));
             }
             
             if (distributions != null) {
                 renderDistributions(writer,  new TreeRenderProperties(context, this, childContextType));
+            }
+
+            if (context.getReferenceList().size() > 0) {
+                renderReferences(writer, new TreeRenderProperties(context, this, childContextType));
             }
 
             if (recursive && children != null) {
@@ -477,7 +486,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
 
     private void renderDistributions(PrintWriter writer, TreeRenderProperties context) {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + "<div class=\"Distribution\">");
+            writer.println(context.getIndent() + "<div class=\"Distribution\">Distribution: ");
 
             for (CoLDPDistribution distribution : distributions) {
                 distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));

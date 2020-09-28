@@ -27,6 +27,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import org.apache.commons.cli.CommandLine;
@@ -92,7 +94,7 @@ public class CoLDPTool {
         PrintWriter writer = null;
 
         if (outputFileName == null) {
-            writer = new PrintWriter(System.out, true);
+            writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
         } else if (!overwrite && new File(outputFileName).exists()) {
             reportError("File exists: " + outputFileName + " - specify -x to overwrite");
             continueExecution = false;
@@ -112,15 +114,19 @@ public class CoLDPTool {
         
             CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
             
-            List<CoLDPTaxon> taxa = coldp.getRootTaxa();
-            
-            for(CoLDPTaxon taxon : taxa) {
-                taxon.render(
-                    writer, 
-                    new TreeRenderProperties(TreeRenderType.HTML, 
-                                             ContextType.None, 
-                                             TreeRenderType.HTML.getIndentUnit(), 
-                                             indentCount));
+            if(selectedTaxonName != null) {
+                CoLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+                
+                if (taxon == null) {
+                    reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
+                } else {
+                    renderHigherTaxa(writer, taxon);
+                    renderTaxon(writer, taxon);
+                }
+            } else {
+                for(CoLDPTaxon taxon : coldp.getRootTaxa()) {
+                    renderTaxon(writer, taxon);
+                }
             }
             
             if (templateReader != null) {
@@ -128,6 +134,31 @@ public class CoLDPTool {
             }
         
             writer.close();
+        }
+    }
+    
+    private static void renderTaxon(PrintWriter writer, CoLDPTaxon taxon) {
+        taxon.render(writer, 
+            new TreeRenderProperties(TreeRenderType.HTML, 
+                                     ContextType.None, 
+                                     TreeRenderType.HTML.getIndentUnit(), 
+                                     indentCount));
+    }
+
+    private static void renderHigherTaxa(PrintWriter writer, CoLDPTaxon taxon) {
+        List<CoLDPTaxon> higherTaxa = new ArrayList<>();
+
+        while (taxon.getParent() != null) {
+            taxon = taxon.getParent();
+            higherTaxa.add(0, taxon);
+        }
+        
+        for (CoLDPTaxon ancestor : higherTaxa) {
+            ancestor.render(writer, 
+                new TreeRenderProperties(TreeRenderType.HTML, 
+                                         ContextType.HigherTaxa, 
+                                         TreeRenderType.HTML.getIndentUnit(), 
+                                         indentCount));
         }
     }
 

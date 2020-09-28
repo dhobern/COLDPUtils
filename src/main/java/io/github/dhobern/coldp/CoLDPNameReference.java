@@ -182,10 +182,13 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
                 formatted += " (" + linkURLs(remarks) + ")";
             }
 
-            formatted += ": " + reference.getAuthor() + " ";
+            formatted += ": " + reference.getAuthor();
             if (reference.getYear() != null) {
-                formatted += "(" + reference.getYear() + ") ";
+                formatted += " (" + reference.getYear() + "), ";
+            } else {
+                formatted += ", ";
             }
+                
 
             if (link != null && link.startsWith("http")) {
                 formatted += "<a href=\"" + link + "\" target=\"_blank\">" 

@@ -70,6 +70,15 @@ public class CoLDataPackage {
         return rootTaxa;
     }
 
+    public CoLDPTaxon getTaxonByName(String name) {
+        for (CoLDPTaxon taxon : taxa.values()) {
+            if (taxon.getName().getScientificName().equals(name)) {
+                return taxon;
+            }
+        }
+        return null;
+    }
+
     public List<CoLDPDistribution> getDistributions() {
         return distributions;
     }
@@ -149,10 +158,11 @@ public class CoLDataPackage {
             }
             
             for(CoLDPTaxon taxon : taxa.values()) {
+                // Scientific name is used in sorting taxa so set this first
+                taxon.setName(names.get(taxon.getNameID()));
                 if (taxon.getParentID() != null) {
                     taxon.setParent(taxa.get(taxon.getParentID()));
                 }
-                taxon.setName(names.get(taxon.getNameID()));
                 if (taxon.getReferenceID() != null) {
                     taxon.setReference(references.get(taxon.getReferenceID()));
                 }
@@ -171,8 +181,9 @@ public class CoLDataPackage {
             }
             
             for (CoLDPDistribution distribution : distributions) {
-                distribution.setTaxon(taxa.get(distribution.getTaxonID()));
+                // Region is used in sorting distributions so set this first
                 distribution.setRegion(regions.get(distribution.getArea()));
+                distribution.setTaxon(taxa.get(distribution.getTaxonID()));
                 if (distribution.getReferenceID() != null) {
                     distribution.setReference(references.get(distribution.getReferenceID()));
                 }

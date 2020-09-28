@@ -8,6 +8,7 @@ package io.github.dhobern.coldp;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
+import java.util.Comparator;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,23 +221,31 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
             }
             
             String formatted = (region == null) ? area : region.getName();
-            if (status != null) {
-                formatted += " (" + status + ")";
+
+            if (status != null && !status.equals("native")) {
+                if (note != null && !note.equalsIgnoreCase(status)) {
+                    formatted += " (" + status + ", " + note + ")";
+                } else {
+                    formatted += " (" + status + ")";
+                }
+            } else if (note != null) {
+                formatted += " (" +  note + ")";
             }
 
-            if (note == null) {
-                writer.println(context.getIndent() + wrapDiv("Region", formatted));
-            } else {
-                writer.println(context.getIndent() + "<div class=\"Region\">");
-                renderNote(writer, new TreeRenderProperties(context, this, ContextType.Distribution), note);
-                writer.println(context.getIndent() + "</div>");
-        }
+            writer.println(context.getIndent() + wrapDiv("Region", formatted));
         }
     }
-    
-    private void renderNote(PrintWriter writer, TreeRenderProperties context, String note) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + note));
+    public static class RegionSort implements Comparator<CoLDPDistribution> { 
+        @Override
+        public int compare(CoLDPDistribution o1, CoLDPDistribution o2) {
+            int comparison;
+            if (o1.region != null && o1.region.getName() != null 
+                    && o2.region != null && o2.region.getName() != null) {
+                comparison = o1.region.getName().compareTo(o2.region.getName());
+            } else {
+                comparison = o1.compareTo(o2);
+            }
+            return comparison;
         }
-    }    
+    }  
 }
