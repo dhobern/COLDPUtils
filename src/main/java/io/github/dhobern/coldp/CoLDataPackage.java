@@ -123,7 +123,7 @@ public class CoLDataPackage {
                         = new CSVReader<>(folderName + "distribution.csv", CoLDPDistribution.class, ",");
                 distributions = distributionReader.getList();
             } else {
-                regions = new HashMap<>();
+                distributions = new ArrayList<>();
             }
  
             for(CoLDPName name : names.values()) {
