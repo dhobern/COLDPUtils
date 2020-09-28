@@ -206,17 +206,17 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
             String note = null;
             if (reference != null) {
                 context.addReference(reference);
-                remarks =  reference.getAuthor();
+                note =  reference.getAuthor();
                 if (reference.getYear() != null) {
-                    remarks += " " + reference.getYear();
+                    note += " " + reference.getYear();
                 }
             }
             
             if (remarks != null) {
                 if (note == null) {
-                    note = linkURLs(remarks);
+                    note = remarks;
                 } else {
-                    note += ": " + linkURLs(remarks);
+                    note = note + ": " + remarks;
                 }
             }
             

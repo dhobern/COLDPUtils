@@ -3,8 +3,8 @@ taxonId,area,gazetteer,status,referenceID
 271,CR,iso,native,
 271,CR-P,iso,native,
 271,CU,iso,native,
-271,DM,iso,native,
-271,EC,iso,native,
+271,DM,iso,native,,A remark
+271,EC,iso,native,1217,A remark
 271,GD,iso,native,
 271,GP,iso,native,
 271,GT,iso,native,
