@@ -60,7 +60,7 @@ public class COLDPTool {
      * Enumeration of output formats and their current support level
      */
     private static enum OutputFormat {
-        HTML(true), CSV(true), TSV(false), JSON(false);
+        HTML(true), TSV(false), JSON(false);
         
         private boolean supported = false;
         
@@ -82,14 +82,14 @@ public class COLDPTool {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPTool.class);
     
-    private static String templateEyecatcherText = "CoLDPTool.Output";
+    private static String templateEyecatcherText = "COLDPTool.Output";
     
     private static String selectedTaxonName;
     private static String coldpFolderName;
+    private static String outputFolderName;
     private static String outputFileName;
     private static BufferedReader templateReader;
     private static int indentCount = 0;
-    
     private static IdentifierStyle identifierStyle = IdentifierStyle.None;
     
     private static OutputFormat format = OutputFormat.HTML;
@@ -122,7 +122,15 @@ public class COLDPTool {
             return;
         }
         
-        boolean continueExecution = parseComandLine(arguments);
+        switch (commandName) {
+            case TOHTML -> executeToHTML(arguments);
+            case MODIFY -> executeModify(arguments);
+            case VALIDATE -> executeValidate(arguments);
+        }
+    }
+    
+    private static void executeToHTML(String[] arguments) {
+        boolean continueExecution = parseToHTMLComandLine(arguments);
 
         COLDataPackage coldp = new COLDataPackage(coldpFolderName);
         
@@ -169,12 +177,25 @@ public class COLDPTool {
 
                 writer.close();
             }
-        } else if (format == OutputFormat.CSV) {
-            if (identifierStyle == IdentifierStyle.Int) {
-                coldp.tidyIdentifiers();
-            }
-            coldp.write(outputFileName, newCsvSuffix);
         }
+    }
+    
+    private static void executeModify(String[] arguments) {
+        boolean continueExecution = parseModifyComandLine(arguments);
+
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+        
+        if (identifierStyle == IdentifierStyle.Int) {
+            coldp.tidyIdentifiers();
+        }
+
+        coldp.write(outputFileName, newCsvSuffix, overwrite);
+    }
+    
+    private static void executeValidate(String[] arguments) {
+        boolean continueExecution = parseValidateComandLine(arguments);
+
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
     }
     
     private static void renderTaxon(PrintWriter writer, COLDPTaxon taxon) {
@@ -202,12 +223,12 @@ public class COLDPTool {
         }
     }
 
-    private static boolean parseComandLine(String[] argv) {
+    private static boolean parseToHTMLComandLine(String[] argv) {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
                 .addOption("t", "taxon", true, "Name of focus taxon")
-                .addOption("f", "format", true, "Output format, one of HTML, JSON, CSV, TSV")
+                .addOption("f", "format", true, "Output format, defaults to HTML")
                 .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
                 .addOption("i", "initial-indent", true, "Initial indent level (two spaces per level)")
                 .addOption("h", "help", false, "Show help")
@@ -221,15 +242,7 @@ public class COLDPTool {
                                    + "inserted at the end of the output file")
                 .addOption("e", "eyecatcher", true, 
                            "Text contained in line in template file at point "
-                                   + "where output content is to be inserted")
-                .addOption("S", "suffix", true, 
-                           "Suffix to file names when printing to CSV,"
-                                   + "defaults to \"-NEW\" - replace with "
-                                   + "care to avoid overwriting source CSV "
-                                   + "files")
-                .addOption("I", "identifer-style", true, "Update style of "
-                                   + "identifiers for references, names and "
-                                   + "taxa, one of Int");
+                                   + "where output content is to be inserted");
 
         CommandLineParser parser = new DefaultParser();
         
@@ -303,6 +316,80 @@ public class COLDPTool {
                             command = null;
                         }
                         break;
+                }
+            }
+            if (command != null) {
+                String[] args = command.getArgs();
+                if (args != null) {
+                    switch (command.getArgs().length) {
+                        case 0:
+                            reportError("CoLDP input folder name not specified");
+                            command = null;
+                            break;
+                        case 1:
+                            coldpFolderName = command.getArgs()[0];
+                            if (verbose) {
+                                reportInfo("CoLDP input folder name: " + coldpFolderName);
+                            }
+                            break;
+                        default:
+                            reportError("Too many command line arguments");
+                            command = null;
+                            break;
+                    }
+                }
+            }
+        }
+        
+        if (command == null || command.hasOption("h")) {
+            showHelp(options);
+            command = null;
+        }
+
+        return (command != null);
+    }
+
+    private static boolean parseModifyComandLine(String[] argv) {
+        CommandLine command = null;
+        Options options = new Options();
+        options.addOption("x", "overwrite", false, "Overwrite existing output file")
+                .addOption("o", "output-folder", true, "Output folder name")
+                .addOption("h", "help", false, "Show help")
+                .addOption("v", "verbose", false, "Verbose")
+                .addOption("S", "suffix", true, 
+                           "Suffix to file names when printing to CSV,"
+                                   + "defaults to \"-NEW\" - replace with "
+                                   + "care to avoid overwriting source CSV "
+                                   + "files")
+                .addOption("I", "identifer-style", true, "Update style of "
+                                   + "identifiers for references, names and "
+                                   + "taxa, one of Int");
+
+        CommandLineParser parser = new DefaultParser();
+        
+        try {
+            command = parser.parse(options, argv);
+        } catch (ParseException ex) {
+            reportError("Failed to parse command line: " + ex.toString());
+        }
+
+        if (command != null) {
+            boolean verbose = command.hasOption("v");
+            
+            for (Option o : command.getOptions()) {
+                switch (o.getOpt()) {
+                    case "o":
+                        outputFolderName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Output folder name: " + outputFolderName);
+                        }
+                        break;
+                    case "x":
+                        overwrite = true;
+                        if (verbose) {
+                            reportInfo("Overwrite existing output files: Yes");
+                        }
+                        break;
                     case "I":
                         try {
                             identifierStyle = IdentifierStyle.valueOf(o.getValue());
@@ -333,13 +420,61 @@ public class COLDPTool {
                 if (args != null) {
                     switch (command.getArgs().length) {
                         case 0:
-                            reportError("CoLDP folder name not specified");
+                            reportError("CoLDP input folder name not specified");
                             command = null;
                             break;
                         case 1:
                             coldpFolderName = command.getArgs()[0];
                             if (verbose) {
-                                reportInfo("CoLDP folder name: " + coldpFolderName);
+                                reportInfo("CoLDP input folder name: " + coldpFolderName);
+                            }
+                            break;
+                        default:
+                            reportError("Too many command line arguments");
+                            command = null;
+                            break;
+                    }
+                }
+            }
+        }
+        
+        if (command == null || command.hasOption("h")) {
+            showHelp(options);
+            command = null;
+        }
+
+        return (command != null);
+    }
+
+    private static boolean parseValidateComandLine(String[] argv) {
+        CommandLine command = null;
+        Options options = new Options();
+        options.addOption("h", "help", false, "Show help")
+                .addOption("v", "verbose", false, "Verbose");
+
+        CommandLineParser parser = new DefaultParser();
+        
+        try {
+            command = parser.parse(options, argv);
+        } catch (ParseException ex) {
+            reportError("Failed to parse command line: " + ex.toString());
+        }
+
+        if (command != null) {
+            boolean verbose = command.hasOption("v");
+            
+            if (command != null) {
+                String[] args = command.getArgs();
+                if (args != null) {
+                    switch (command.getArgs().length) {
+                        case 0:
+                            reportError("CoLDP input folder name not specified");
+                            command = null;
+                            break;
+                        case 1:
+                            coldpFolderName = command.getArgs()[0];
+                            if (verbose) {
+                                reportInfo("CoLDP input folder name: " + coldpFolderName);
                             }
                             break;
                         default:

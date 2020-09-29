@@ -314,70 +314,105 @@ public class COLDataPackage {
         return id;
     }
     
+    private static PrintWriter safeFileOpen(String folderName, String baseName, 
+                        String suffix, boolean overwrite) {
+        String fileName = folderName + baseName + suffix + ".csv";
+        
+        if (!overwrite && (new File(fileName)).exists()) {
+            LOG.error("File " + fileName + "exists");
+            return null;
+        }
+        
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(fileName, "UTF-8");
+        } catch (IOException e) {
+            LOG.error("Failed to open " + fileName +": " + e.toString());
+        }
+        
+        return writer;
+    }
+    
+
     public void write(String folderName, String suffix) {
+        write(folderName, suffix, true);
+    }
+    
+    public void write(String folderName, String suffix, boolean overwrite) {
         if (!folderName.endsWith("/")) {
             folderName += "/";
         }
-        
-        try {
-           
-            PrintWriter writer = new PrintWriter(folderName + "name" + suffix + ".csv", "UTF-8");
+
+        PrintWriter writer = safeFileOpen(folderName, "name", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPName.getCsvHeader());
             for(COLDPName name : names.values()) {
                 writer.println(name.toCSV());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "reference" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "reference", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPReference.getCsvHeader());
             for(COLDPReference reference : references.values()) {
                 writer.println(reference.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "namereference" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "namereference", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPNameReference.getCsvHeader());
             for(COLDPNameReference nameReference : nameReferences) {
                 writer.println(nameReference.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "taxon" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "taxon", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPTaxon.getCsvHeader());
             for(COLDPTaxon taxon : taxa.values()) {
                 writer.println(taxon.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "synonym" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "synonym", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPSynonym.getCsvHeader());
             for(COLDPSynonym synonym : synonyms) {
                 writer.println(synonym.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "namerelation" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "namerelation", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPNameRelation.getCsvHeader());
             for(COLDPNameRelation nameRelation : nameRelations) {
                 writer.println(nameRelation.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "region" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "region", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPRegion.getCsvHeader());
             for(COLDPRegion region : regions.values()) {
                 writer.println(region.toCsv());
             }
             writer.close();
-            
-            writer = new PrintWriter(folderName + "distribution" + suffix + ".csv", "UTF-8");
+        }
+
+        writer = safeFileOpen(folderName, "distribution", suffix, overwrite);
+        if (writer != null) {
             writer.println(COLDPDistribution.getCsvHeader());
             for(COLDPDistribution distribution : distributions) {
                 writer.println(distribution.toCsv());
             }
             writer.close();
-        } catch (IOException ex) {
-            LOG.error(ex.toString());
         }
     }
 }
