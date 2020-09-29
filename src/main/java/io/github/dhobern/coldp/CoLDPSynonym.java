@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
+public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPSynonym.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPSynonym.class);
   
     private Integer taxonID;
     private Integer nameID; 
@@ -26,11 +26,11 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
     private Integer referenceID; 
     private String remarks;
     
-    private CoLDPTaxon taxon;
-    private CoLDPName name;
-    private CoLDPReference reference;
+    private COLDPTaxon taxon;
+    private COLDPName name;
+    private COLDPReference reference;
 
-    public CoLDPSynonym() {
+    public COLDPSynonym() {
     }
 
     public Integer getTaxonID() {
@@ -45,11 +45,11 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
         }
     }
 
-    public CoLDPTaxon getTaxon() {
+    public COLDPTaxon getTaxon() {
         return taxon;
     }
 
-    public void setTaxon(CoLDPTaxon taxon) {
+    public void setTaxon(COLDPTaxon taxon) {
         if (this.taxon != null) {
             taxon.deregisterSynonym(this);
         }
@@ -72,11 +72,11 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
         }
     }
 
-    public CoLDPName getName() {
+    public COLDPName getName() {
         return name;
     }
 
-    public void setName(CoLDPName name) {
+    public void setName(COLDPName name) {
         if (this.name != null) {
             name.deregisterSynonym(this);
         }
@@ -107,11 +107,11 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
         }
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             reference.deregisterSynonym(this);
         }
@@ -152,7 +152,7 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPSynonym other = (CoLDPSynonym) obj;
+        final COLDPSynonym other = (COLDPSynonym) obj;
         if (!Objects.equals(this.status, other.status)) {
             return false;
         }
@@ -179,7 +179,7 @@ public class CoLDPSynonym implements Comparable<CoLDPSynonym>, TreeRenderable {
     }
 
     @Override
-    public int compareTo(CoLDPSynonym o) {
+    public int compareTo(COLDPSynonym o) {
         return this.toString().compareTo(o.toString());
     }
 

@@ -60,14 +60,14 @@ public class TreeRenderProperties {
     private final String indentUnit;
     private final int indentCount;
     private final ContextType contextType;
-    private final Set<CoLDPReference> referenceList; 
+    private final Set<COLDPReference> referenceList; 
     
     public TreeRenderProperties(TreeRenderType treeRenderType, ContextType contextType) {
         this.treeRenderType = treeRenderType;
         this.contextType = contextType;
         this.indentUnit = treeRenderType.getIndentUnit();
         this.indentCount = 0;
-        this.referenceList = new TreeSet<>(new CoLDPReference.BibliographicSort());
+        this.referenceList = new TreeSet<>(new COLDPReference.BibliographicSort());
     }
 
     public TreeRenderProperties(TreeRenderType treeRenderType, ContextType contextType, String indentUnit, int indentCount) {
@@ -75,7 +75,7 @@ public class TreeRenderProperties {
         this.indentUnit = indentUnit;
         this.indentCount = indentCount;
         this.contextType = contextType;
-        this.referenceList = new TreeSet<>(new CoLDPReference.BibliographicSort());
+        this.referenceList = new TreeSet<>(new COLDPReference.BibliographicSort());
     }
 
     public TreeRenderProperties(TreeRenderProperties parentContext, 
@@ -97,7 +97,7 @@ public class TreeRenderProperties {
         if (!resetReferences) {
             this.referenceList = parentContext.referenceList;
         } else {
-            this.referenceList = new TreeSet<>(new CoLDPReference.BibliographicSort());
+            this.referenceList = new TreeSet<>(new COLDPReference.BibliographicSort());
         }
     }
 
@@ -113,41 +113,41 @@ public class TreeRenderProperties {
         return contextType;
     }   
 
-    void addReference(CoLDPReference reference) {
+    void addReference(COLDPReference reference) {
         referenceList.add(reference);
     }
     
-    public Set<CoLDPReference> getReferenceList() {
+    public Set<COLDPReference> getReferenceList() {
         return referenceList;
     }
     
-    public CoLDPSynonym getCurrentSynonym() {
+    public COLDPSynonym getCurrentSynonym() {
         for (TreeRenderNode node : renderStack) {
             TreeRenderable renderable = node.getTreeRenderable();
-            if (renderable instanceof CoLDPSynonym) {
-                return (CoLDPSynonym) renderable;
+            if (renderable instanceof COLDPSynonym) {
+                return (COLDPSynonym) renderable;
             }
         }
         
         return null;
     }
     
-    public CoLDPName getCurrentName() {
+    public COLDPName getCurrentName() {
         for (TreeRenderNode node : renderStack) {
             TreeRenderable renderable = node.getTreeRenderable();
-            if (renderable instanceof CoLDPName) {
-                return (CoLDPName) renderable;
+            if (renderable instanceof COLDPName) {
+                return (COLDPName) renderable;
             }
         }
         
         return null;
     }
     
-    public CoLDPTaxon getCurrentTaxon() {
+    public COLDPTaxon getCurrentTaxon() {
         for (TreeRenderNode node : renderStack) {
             TreeRenderable renderable = node.getTreeRenderable();
-            if (renderable instanceof CoLDPTaxon) {
-                return (CoLDPTaxon) renderable;
+            if (renderable instanceof COLDPTaxon) {
+                return (COLDPTaxon) renderable;
             }
         }
         

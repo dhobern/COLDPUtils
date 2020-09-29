@@ -47,7 +47,14 @@ import org.slf4j.LoggerFactory;
  * 
  * @author dhobern@gmail.com
  */
-public class CoLDPTool {
+public class COLDPTool {
+
+    /**
+     * Enumeration of command names
+     */
+    private static enum CommandName {
+        NONE, TOHTML, MODIFY, VALIDATE; 
+    }
 
     /**
      * Enumeration of output formats and their current support level
@@ -67,13 +74,13 @@ public class CoLDPTool {
     }
 
     /**
-     * Enumeration of output formats and their current support level
+     * Enumeration of identifier styles
      */
     private static enum IdentifierStyle {
         None, Int;
     }
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPTool.class);
     
     private static String templateEyecatcherText = "CoLDPTool.Output";
     
@@ -97,9 +104,27 @@ public class CoLDPTool {
      */
     public static void main(String argv[]) {
         
-        boolean continueExecution = parseComandLine(argv);
+        CommandName commandName = CommandName.NONE;
+        String[] arguments = null;
+        
+        if (argv.length > 0) {
+            try {
+                commandName = CommandName.valueOf(argv[0].toUpperCase());
+                arguments = new String[argv.length - 1];
+                System.arraycopy(argv, 1, arguments, 0, argv.length - 1);
+            } catch (Exception e) {
+                // Swallow exception here and show help below
+            }
+        }
 
-        CoLDataPackage coldp = new CoLDataPackage(coldpFolderName);
+        if (commandName == CommandName.NONE) {
+            showMainHelp();
+            return;
+        }
+        
+        boolean continueExecution = parseComandLine(arguments);
+
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
         
         if (format == OutputFormat.HTML) {
             PrintWriter writer = null;
@@ -124,7 +149,7 @@ public class CoLDPTool {
                 }
 
                 if(selectedTaxonName != null) {
-                    CoLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+                    COLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
 
                     if (taxon == null) {
                         reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
@@ -133,7 +158,7 @@ public class CoLDPTool {
                         renderTaxon(writer, taxon);
                     }
                 } else {
-                    for(CoLDPTaxon taxon : coldp.getRootTaxa()) {
+                    for(COLDPTaxon taxon : coldp.getRootTaxa()) {
                         renderTaxon(writer, taxon);
                     }
                 }
@@ -152,7 +177,7 @@ public class CoLDPTool {
         }
     }
     
-    private static void renderTaxon(PrintWriter writer, CoLDPTaxon taxon) {
+    private static void renderTaxon(PrintWriter writer, COLDPTaxon taxon) {
         taxon.render(writer, 
             new TreeRenderProperties(TreeRenderType.HTML, 
                                      ContextType.None, 
@@ -160,15 +185,15 @@ public class CoLDPTool {
                                      indentCount));
     }
 
-    private static void renderHigherTaxa(PrintWriter writer, CoLDPTaxon taxon) {
-        List<CoLDPTaxon> higherTaxa = new ArrayList<>();
+    private static void renderHigherTaxa(PrintWriter writer, COLDPTaxon taxon) {
+        List<COLDPTaxon> higherTaxa = new ArrayList<>();
 
         while (taxon.getParent() != null) {
             taxon = taxon.getParent();
             higherTaxa.add(0, taxon);
         }
         
-        for (CoLDPTaxon ancestor : higherTaxa) {
+        for (COLDPTaxon ancestor : higherTaxa) {
             ancestor.render(writer, 
                 new TreeRenderProperties(TreeRenderType.HTML, 
                                          ContextType.HigherTaxa, 
@@ -359,8 +384,14 @@ public class CoLDPTool {
         outputText(" INFO: " + s);
     }
 
+    private static void showMainHelp() {
+        for (String s : MAIN_HELP) { 
+            outputText(s);
+        }
+    }
+ 
     private static void showHelp(Options options) {
-        outputText("");
+        showMainHelp();
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("CoLDPTool <options> coldpFolderName", options);
     }
@@ -368,4 +399,25 @@ public class CoLDPTool {
     private static void outputText(String s) {
         System.err.println(s);
     }
+    
+    private static final String[] MAIN_HELP = {
+        "",
+        "COLDPTool Help",
+        "--------------",
+        "",
+        "Tools for manipulating the contents of Catalogue of Life Data Package",
+        "(COLDP) files. Current tools operate on unzipped folders of CSV files.",
+        "",
+        "Available commands - type \"COLDPTool <COMMANDNAME>\" for more help:",
+        "",
+        "  COLDP VALIDATE <options> folderName",
+        "    - Report on issues detected in COLDP data",
+        "",
+        "  COLDP TOHTML <options> folderName",
+        "    - Format contents as a set of nested HTML <div> elements",
+        "",
+        "  COLDP MODIFY <options> folderName",
+        "    - Transform and rewrite COLDP data",
+        ""
+    };
 }

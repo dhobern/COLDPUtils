@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeRenderable {
+public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPNameReference.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPNameReference.class);
      
     private Integer nameID;
     private Integer referenceID;
@@ -26,10 +26,10 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
     private String link;
     private String remarks;
     
-    private CoLDPName name;
-    private CoLDPReference reference;
+    private COLDPName name;
+    private COLDPReference reference;
 
-    public CoLDPNameReference() {
+    public COLDPNameReference() {
     }
 
     public Integer getNameID() {
@@ -44,11 +44,11 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
         }
     }
 
-    public CoLDPName getName() {
+    public COLDPName getName() {
         return name;
     }
 
-    public void setName(CoLDPName name) {
+    public void setName(COLDPName name) {
         if (this.name != null) {
             this.name.deregisterNameReference(this);
         }
@@ -71,11 +71,11 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
         }
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             this.reference.deregisterNameReference(this);
         }
@@ -132,7 +132,7 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPNameReference other = (CoLDPNameReference) obj;
+        final COLDPNameReference other = (COLDPNameReference) obj;
         if (!Objects.equals(this.page, other.page)) {
             return false;
         }
@@ -157,7 +157,7 @@ public class CoLDPNameReference implements Comparable<CoLDPNameReference>, TreeR
     }
 
     @Override
-    public int compareTo(CoLDPNameReference o) {
+    public int compareTo(COLDPNameReference o) {
         return this.toString().compareTo(o.toString());
     }
 

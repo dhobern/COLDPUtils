@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPReference implements TreeRenderable {
+public class COLDPReference implements TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPReference.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPReference.class);
     
     private Integer ID;
     private String author;
@@ -30,14 +30,14 @@ public class CoLDPReference implements TreeRenderable {
     private String details;
     private String link;
     
-    private Set<CoLDPName> names;
-    private Set<CoLDPNameReference> nameReferences;
-    private Set<CoLDPNameRelation> nameRelations;
-    private Set<CoLDPTaxon> taxa;
-    private Set<CoLDPSynonym> synonyms;
-    private Set<CoLDPDistribution> distributions;
+    private Set<COLDPName> names;
+    private Set<COLDPNameReference> nameReferences;
+    private Set<COLDPNameRelation> nameRelations;
+    private Set<COLDPTaxon> taxa;
+    private Set<COLDPSynonym> synonyms;
+    private Set<COLDPDistribution> distributions;
 
-    public CoLDPReference() {
+    public COLDPReference() {
     }
 
     public Integer getID() {
@@ -96,11 +96,11 @@ public class CoLDPReference implements TreeRenderable {
         this.link = link;
     }
 
-    public Set<CoLDPName> getNames() {
+    public Set<COLDPName> getNames() {
         return names;
     }
 
-    void registerName(CoLDPName name) {
+    void registerName(COLDPName name) {
         if (name != null) {
             if (names == null) {
                 names = new HashSet<>();
@@ -109,17 +109,17 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterName(CoLDPName name) {
+    void deregisterName(COLDPName name) {
         if (name != null && names != null) {
             names.remove(name);
         }
     }
  
-    public Set<CoLDPNameReference> getNameReferences() {
+    public Set<COLDPNameReference> getNameReferences() {
         return nameReferences;
     }
 
-    void registerNameReference(CoLDPNameReference nameReference) {
+    void registerNameReference(COLDPNameReference nameReference) {
         if (nameReference != null) {
             if (nameReferences == null) {
                 nameReferences = new HashSet<>();
@@ -128,17 +128,17 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterNameReference(CoLDPNameReference nameReference) {
+    void deregisterNameReference(COLDPNameReference nameReference) {
         if (nameReference != null && nameReferences != null) {
             nameReferences.remove(nameReference);
         }
     }
  
-    public Set<CoLDPNameRelation> getNameRelations() {
+    public Set<COLDPNameRelation> getNameRelations() {
         return nameRelations;
     }
 
-    void registerNameRelation(CoLDPNameRelation nameRelation) {
+    void registerNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null) {
             if (nameRelations == null) {
                 nameRelations = new HashSet<>();
@@ -147,17 +147,17 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterNameRelation(CoLDPNameRelation nameRelation) {
+    void deregisterNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null && nameRelations != null) {
             nameRelations.remove(nameRelation);
         }
     }
  
-    public Set<CoLDPTaxon> getTaxa() {
+    public Set<COLDPTaxon> getTaxa() {
         return taxa;
     }
 
-    void registerTaxon(CoLDPTaxon taxon) {
+    void registerTaxon(COLDPTaxon taxon) {
         if (taxon != null) {
             if (taxa == null) {
                 taxa = new HashSet<>();
@@ -166,17 +166,17 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterTaxon(CoLDPTaxon taxon) {
+    void deregisterTaxon(COLDPTaxon taxon) {
         if (taxon != null && taxa != null) {
             taxa.remove(taxon);
         }
     }
 
-    public Set<CoLDPSynonym> getSynonyms() {
+    public Set<COLDPSynonym> getSynonyms() {
         return synonyms;
     }
 
-    void registerSynonym(CoLDPSynonym synonym) {
+    void registerSynonym(COLDPSynonym synonym) {
         if (synonym != null) {
             if (synonyms == null) {
                 synonyms = new HashSet<>();
@@ -185,13 +185,13 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterSynonym(CoLDPSynonym synonym) {
+    void deregisterSynonym(COLDPSynonym synonym) {
         if (synonym != null && synonyms != null) {
             synonyms.remove(synonym);
         }
     }
 
-    void registerDistribution(CoLDPDistribution distribution) {
+    void registerDistribution(COLDPDistribution distribution) {
         if (distribution != null) {
             if (distributions == null) {
                 distributions = new HashSet<>();
@@ -200,7 +200,7 @@ public class CoLDPReference implements TreeRenderable {
         }
     }
  
-    void deregisterDistribution(CoLDPDistribution distribution) {
+    void deregisterDistribution(COLDPDistribution distribution) {
         if (distribution != null && distributions != null) {
             distributions.remove(distribution);
         }
@@ -224,16 +224,16 @@ public class CoLDPReference implements TreeRenderable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPReference other = (CoLDPReference) obj;
+        final COLDPReference other = (COLDPReference) obj;
         if (!Objects.equals(this.ID, other.ID)) {
             return false;
         }
         return true;
     }
 
-    public static class BibliographicSort implements Comparator<CoLDPReference> 
+    public static class BibliographicSort implements Comparator<COLDPReference> 
     { 
-        public int compare(CoLDPReference a, CoLDPReference b) 
+        public int compare(COLDPReference a, COLDPReference b) 
         { 
             int comparison = a.getAuthor().toLowerCase().compareTo(b.getAuthor().toLowerCase());
             if (comparison == 0) {

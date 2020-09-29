@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPName implements TreeRenderable {
+public class COLDPName implements TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPName.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPName.class);
 
     private Integer ID;
     private Integer basionymID;
@@ -40,16 +40,16 @@ public class CoLDPName implements TreeRenderable {
     private String remarks;
     private String link;
     
-    private CoLDPName basionym;
-    private Set<CoLDPName> combinations;
-    private CoLDPReference reference;
-    private Set<CoLDPNameReference> nameReferences;
-    private Set<CoLDPNameRelation> nameRelations;
-    private Set<CoLDPNameRelation> relatedNameRelations;
-    private CoLDPTaxon taxon;
-    private Set<CoLDPSynonym> synonyms;
+    private COLDPName basionym;
+    private Set<COLDPName> combinations;
+    private COLDPReference reference;
+    private Set<COLDPNameReference> nameReferences;
+    private Set<COLDPNameRelation> nameRelations;
+    private Set<COLDPNameRelation> relatedNameRelations;
+    private COLDPTaxon taxon;
+    private Set<COLDPSynonym> synonyms;
 
-    public CoLDPName() {
+    public COLDPName() {
     }
 
     public Integer getID() {
@@ -73,11 +73,11 @@ public class CoLDPName implements TreeRenderable {
         this.basionymID = basionymID;
     }
 
-    public CoLDPName getBasionym() {
+    public COLDPName getBasionym() {
         return basionym;
     }
 
-    public void setBasionym(CoLDPName basionym) {
+    public void setBasionym(COLDPName basionym) {
         if (this.basionym != null && !this.basionym.equals(this)) {
             this.basionym.deregisterCombination(this);
         }
@@ -88,11 +88,11 @@ public class CoLDPName implements TreeRenderable {
         }
     }
 
-    public Set<CoLDPName> getCombinations() {
+    public Set<COLDPName> getCombinations() {
         return combinations;
     }
 
-    void registerCombination(CoLDPName combination) {
+    void registerCombination(COLDPName combination) {
         if (combination != null) {
             if (combinations == null) {
                 combinations = new HashSet<>();
@@ -101,7 +101,7 @@ public class CoLDPName implements TreeRenderable {
         }
     }
  
-    void deregisterCombination(CoLDPName combination) {
+    void deregisterCombination(COLDPName combination) {
         if (combination != null && combinations != null) {
             combinations.remove(combination);
         }
@@ -176,11 +176,11 @@ public class CoLDPName implements TreeRenderable {
         this.referenceID = referenceID;
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             this.reference.deregisterName(this);
         }
@@ -239,11 +239,11 @@ public class CoLDPName implements TreeRenderable {
         this.link = link;
     }
 
-    public Set<CoLDPNameReference> getNameReferences() {
+    public Set<COLDPNameReference> getNameReferences() {
         return nameReferences;
     }
 
-    void registerNameReference(CoLDPNameReference nameReference) {
+    void registerNameReference(COLDPNameReference nameReference) {
         if (nameReference != null) {
             if (nameReferences == null) {
                 nameReferences = new HashSet<>();
@@ -252,17 +252,17 @@ public class CoLDPName implements TreeRenderable {
         }
     }
  
-    void deregisterNameReference(CoLDPNameReference nameReference) {
+    void deregisterNameReference(COLDPNameReference nameReference) {
         if (nameReference != null && nameReferences != null) {
             nameReferences.remove(nameReference);
         }
     }
  
-    public Set<CoLDPNameRelation> getNameRelations() {
+    public Set<COLDPNameRelation> getNameRelations() {
         return nameRelations;
     }
 
-    void registerNameRelation(CoLDPNameRelation nameRelation) {
+    void registerNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null) {
             if (nameRelations == null) {
                 nameRelations = new HashSet<>();
@@ -271,17 +271,17 @@ public class CoLDPName implements TreeRenderable {
         }
     }
  
-    void deregisterNameRelation(CoLDPNameRelation nameRelation) {
+    void deregisterNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null && nameRelations != null) {
             nameRelations.remove(nameRelation);
         }
     }
  
-    public Set<CoLDPNameRelation> getRelatedNameRelations() {
+    public Set<COLDPNameRelation> getRelatedNameRelations() {
         return relatedNameRelations;
     }
 
-    void registerRelatedNameRelation(CoLDPNameRelation nameRelation) {
+    void registerRelatedNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null) {
             if (relatedNameRelations == null) {
                 relatedNameRelations = new HashSet<>();
@@ -290,17 +290,17 @@ public class CoLDPName implements TreeRenderable {
         }
     }
  
-    void deregisterRelatedNameRelation(CoLDPNameRelation nameRelation) {
+    void deregisterRelatedNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null && relatedNameRelations != null) {
             relatedNameRelations.remove(nameRelation);
         }
     }
 
-    public CoLDPTaxon getTaxon() {
+    public COLDPTaxon getTaxon() {
         return taxon;
     }
 
-    public void setTaxon(CoLDPTaxon taxon) {
+    public void setTaxon(COLDPTaxon taxon) {
         if (this.taxon != null) {
             LOG.error("Attempted to set taxon to " + taxon + " when name associated with taxon " + this.taxon);
         } else {
@@ -308,11 +308,11 @@ public class CoLDPName implements TreeRenderable {
         }
     }
 
-    public Set<CoLDPSynonym> getSynonyms() {
+    public Set<COLDPSynonym> getSynonyms() {
         return synonyms;
     }
 
-    void registerSynonym(CoLDPSynonym synonym) {
+    void registerSynonym(COLDPSynonym synonym) {
         if (synonym != null) {
             if (synonyms == null) {
                 synonyms = new HashSet<>();
@@ -321,7 +321,7 @@ public class CoLDPName implements TreeRenderable {
         }
     }
  
-    void deregisterSynonym(CoLDPSynonym synonym) {
+    void deregisterSynonym(COLDPSynonym synonym) {
         if (synonym != null && synonyms != null) {
             synonyms.remove(synonym);
         }
@@ -350,7 +350,7 @@ public class CoLDPName implements TreeRenderable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPName other = (CoLDPName) obj;
+        final COLDPName other = (COLDPName) obj;
         if (!Objects.equals(this.ID, other.ID)) {
             return false;
         }
@@ -373,8 +373,8 @@ public class CoLDPName implements TreeRenderable {
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        CoLDPTaxon taxon = context.getCurrentTaxon();
-        CoLDPSynonym synonym = context.getCurrentSynonym();
+        COLDPTaxon taxon = context.getCurrentTaxon();
+        COLDPSynonym synonym = context.getCurrentSynonym();
         String nameRemarks = safeTrim(linkURLs(remarks));
         
         if (context.getTreeRenderType() == TreeRenderType.HTML) {
@@ -406,7 +406,7 @@ public class CoLDPName implements TreeRenderable {
             writer.println(indent + "<div class=\"Name\">" + formatted);
 
             if (nameReferences != null) {
-                for (CoLDPNameReference nameReference : nameReferences) {
+                for (COLDPNameReference nameReference : nameReferences) {
                     if (nameReference.getReference() == null) {
                         LOG.error("Reference missing for NameReference: " + nameReference.toString());
                     }
@@ -415,7 +415,7 @@ public class CoLDPName implements TreeRenderable {
             }
 
             if (nameRelations != null) {
-                for (CoLDPNameRelation nameRelation : nameRelations) {
+                for (COLDPNameRelation nameRelation : nameRelations) {
                     if (nameRelation.getReference() != null) {
                         context.addReference(nameRelation.getReference());
                     }
@@ -424,7 +424,7 @@ public class CoLDPName implements TreeRenderable {
             }
 
             if (relatedNameRelations != null) {
-                for (CoLDPNameRelation relatedNameRelation : relatedNameRelations) {
+                for (COLDPNameRelation relatedNameRelation : relatedNameRelations) {
                     if (relatedNameRelation.getReference() != null) {
                         context.addReference(relatedNameRelation.getReference());
                     }
@@ -446,7 +446,7 @@ public class CoLDPName implements TreeRenderable {
         }
     }    
 
-    public static String formatName(CoLDPName name) {
+    public static String formatName(COLDPName name) {
         String scientificName = name.getScientificName();
         switch (name.getRank()) {
             case "genus":

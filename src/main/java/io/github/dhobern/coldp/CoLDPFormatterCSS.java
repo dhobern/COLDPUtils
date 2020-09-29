@@ -6,8 +6,8 @@
 package io.github.dhobern.coldp;
 
 import static io.github.dhobern.utils.StringUtils.*;
-import io.github.dhobern.coldp.CoLDPReference.BibliographicSort;
-import io.github.dhobern.coldp.CoLDPTaxon.AlphabeticalSort;
+import io.github.dhobern.coldp.COLDPReference.BibliographicSort;
+import io.github.dhobern.coldp.COLDPTaxon.AlphabeticalSort;
 import io.github.dhobern.utils.CSVReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,23 +27,23 @@ import org.slf4j.LoggerFactory;
  *
  * @author Platyptilia
  */
-public class CoLDPFormatterCSS {
+public class COLDPFormatterCSS {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPFormatterCSS.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPFormatterCSS.class);
     
-    private static Map<String,CoLDPName> names;
-    private static Map<Integer,CoLDPName> namesByID;
-    private static Map<Integer,CoLDPReference> references;
-    private static Map<Integer,Set<CoLDPNameReference>> nameReferencesByNameID;
-    private static Map<Integer,Set<CoLDPSynonym>> synonymsByNameID;
-    private static Map<Integer,Set<CoLDPSynonym>> synonymsByTaxonID;
-    private static Map<Integer,Set<CoLDPNameRelation>> relationsByNameID;
-    private static Map<Integer,Set<CoLDPNameRelation>> relationsByRelatedNameID;
-    private static Map<Integer,CoLDPTaxon> taxa;
-    private static Map<Integer,CoLDPTaxon> taxaByNameID;
-    private static Map<Integer,Set<CoLDPTaxon>> childrenByParentID;
-    private static Map<Integer,Set<CoLDPDistribution>> distributionsByTaxonID;
-    private static Map<String,CoLDPRegion> regions;
+    private static Map<String,COLDPName> names;
+    private static Map<Integer,COLDPName> namesByID;
+    private static Map<Integer,COLDPReference> references;
+    private static Map<Integer,Set<COLDPNameReference>> nameReferencesByNameID;
+    private static Map<Integer,Set<COLDPSynonym>> synonymsByNameID;
+    private static Map<Integer,Set<COLDPSynonym>> synonymsByTaxonID;
+    private static Map<Integer,Set<COLDPNameRelation>> relationsByNameID;
+    private static Map<Integer,Set<COLDPNameRelation>> relationsByRelatedNameID;
+    private static Map<Integer,COLDPTaxon> taxa;
+    private static Map<Integer,COLDPTaxon> taxaByNameID;
+    private static Map<Integer,Set<COLDPTaxon>> childrenByParentID;
+    private static Map<Integer,Set<COLDPDistribution>> distributionsByTaxonID;
+    private static Map<String,COLDPRegion> regions;
 
     private static final String INDENT = "    ";
     private static final String EQUALS = "=&nbsp;";
@@ -63,27 +63,27 @@ public class CoLDPFormatterCSS {
         String fileNamePrefix = dataFolderName + "/";
        
         try (PrintWriter writer = new PrintWriter(taxonName + (generateFullHtmlPage ? "" : "-catalogue") + ".html", "UTF-8")) {
-            CSVReader<CoLDPName> nameReader
-                    = new CSVReader<>(fileNamePrefix + "name.csv", CoLDPName.class, ",");   
-            names = nameReader.getMap(CoLDPName::getScientificName);
+            CSVReader<COLDPName> nameReader
+                    = new CSVReader<>(fileNamePrefix + "name.csv", COLDPName.class, ",");   
+            names = nameReader.getMap(COLDPName::getScientificName);
             
-            nameReader = new CSVReader<>(fileNamePrefix + "name.csv", CoLDPName.class, ",");
-            namesByID = nameReader.getIntegerMap(CoLDPName::getID);
+            nameReader = new CSVReader<>(fileNamePrefix + "name.csv", COLDPName.class, ",");
+            namesByID = nameReader.getIntegerMap(COLDPName::getID);
             
-            CSVReader<CoLDPTaxon> taxonReader 
+            CSVReader<COLDPTaxon> taxonReader 
                     = new CSVReader<>(fileNamePrefix + "taxon.csv",
-                            CoLDPTaxon.class, ",");
-            taxa = taxonReader.getIntegerMap(CoLDPTaxon::getID);
+                            COLDPTaxon.class, ",");
+            taxa = taxonReader.getIntegerMap(COLDPTaxon::getID);
 
             taxonReader 
-                    = new CSVReader<>(fileNamePrefix + "taxon.csv", CoLDPTaxon.class, ",");
-            taxaByNameID = taxonReader.getIntegerMap(CoLDPTaxon::getNameID);
+                    = new CSVReader<>(fileNamePrefix + "taxon.csv", COLDPTaxon.class, ",");
+            taxaByNameID = taxonReader.getIntegerMap(COLDPTaxon::getNameID);
             
-            Comparator<CoLDPTaxon> alphabeticalSort = new AlphabeticalSort(namesByID);
+            Comparator<COLDPTaxon> alphabeticalSort = new AlphabeticalSort(namesByID);
             childrenByParentID = new HashMap<>();
-            for (CoLDPTaxon taxon : taxa.values()) {
+            for (COLDPTaxon taxon : taxa.values()) {
                 if (taxon.getParentID() != null) {
-                    Set<CoLDPTaxon> children = childrenByParentID.get(taxon.getParentID());
+                    Set<COLDPTaxon> children = childrenByParentID.get(taxon.getParentID());
                     if (children == null) {
                         children = new TreeSet<>(alphabeticalSort);
                         childrenByParentID.put(taxon.getParentID(), children);
@@ -92,41 +92,41 @@ public class CoLDPFormatterCSS {
                 }
             }
 
-            CSVReader<CoLDPReference> referenceReader 
-                    = new CSVReader<>(fileNamePrefix + "reference.csv", CoLDPReference.class, ",");
-            references = referenceReader.getIntegerMap(CoLDPReference::getID);
+            CSVReader<COLDPReference> referenceReader 
+                    = new CSVReader<>(fileNamePrefix + "reference.csv", COLDPReference.class, ",");
+            references = referenceReader.getIntegerMap(COLDPReference::getID);
 
-            CSVReader<CoLDPNameReference> nameReferenceReader 
-                    = new CSVReader<>(fileNamePrefix + "namereference.csv", CoLDPNameReference.class, ",");
-            nameReferencesByNameID = nameReferenceReader.getIntegerKeyedSets(CoLDPNameReference::getNameID);
+            CSVReader<COLDPNameReference> nameReferenceReader 
+                    = new CSVReader<>(fileNamePrefix + "namereference.csv", COLDPNameReference.class, ",");
+            nameReferencesByNameID = nameReferenceReader.getIntegerKeyedSets(COLDPNameReference::getNameID);
 
-            CSVReader<CoLDPSynonym> synonymReader 
-                    = new CSVReader<>(fileNamePrefix + "synonym.csv", CoLDPSynonym.class, ",");
-            synonymsByNameID = synonymReader.getIntegerKeyedSets(CoLDPSynonym::getNameID);
+            CSVReader<COLDPSynonym> synonymReader 
+                    = new CSVReader<>(fileNamePrefix + "synonym.csv", COLDPSynonym.class, ",");
+            synonymsByNameID = synonymReader.getIntegerKeyedSets(COLDPSynonym::getNameID);
  
-            synonymReader = new CSVReader<>(fileNamePrefix + "synonym.csv", CoLDPSynonym.class, ",");
-            synonymsByTaxonID = synonymReader.getIntegerKeyedSets(CoLDPSynonym::getTaxonID);
+            synonymReader = new CSVReader<>(fileNamePrefix + "synonym.csv", COLDPSynonym.class, ",");
+            synonymsByTaxonID = synonymReader.getIntegerKeyedSets(COLDPSynonym::getTaxonID);
  
-            CSVReader<CoLDPNameRelation> nameRelationReader 
-                    = new CSVReader<>(fileNamePrefix + "namerelation.csv", CoLDPNameRelation.class, ",");
-            relationsByNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getNameID);
+            CSVReader<COLDPNameRelation> nameRelationReader 
+                    = new CSVReader<>(fileNamePrefix + "namerelation.csv", COLDPNameRelation.class, ",");
+            relationsByNameID = nameRelationReader.getIntegerKeyedSets(COLDPNameRelation::getNameID);
  
             nameRelationReader 
-                    = new CSVReader<>(fileNamePrefix + "nameRelation.csv", CoLDPNameRelation.class, ",");
-            relationsByRelatedNameID = nameRelationReader.getIntegerKeyedSets(CoLDPNameRelation::getRelatedNameID);
+                    = new CSVReader<>(fileNamePrefix + "nameRelation.csv", COLDPNameRelation.class, ",");
+            relationsByRelatedNameID = nameRelationReader.getIntegerKeyedSets(COLDPNameRelation::getRelatedNameID);
  
             if (new File(fileNamePrefix + "region.csv").exists()) {
-                CSVReader<CoLDPRegion> regionReader 
-                    = new CSVReader<>(fileNamePrefix + "region.csv", CoLDPRegion.class, ",");
-                regions = regionReader.getMap(CoLDPRegion::getID);
+                CSVReader<COLDPRegion> regionReader 
+                    = new CSVReader<>(fileNamePrefix + "region.csv", COLDPRegion.class, ",");
+                regions = regionReader.getMap(COLDPRegion::getID);
             } else {
                 regions = new HashMap<>();
             }
 
             if (new File(fileNamePrefix + "distribution.csv").exists()) {
-                CSVReader<CoLDPDistribution> distributionReader 
-                    = new CSVReader<>(fileNamePrefix + "distribution.csv", CoLDPDistribution.class, ",");
-                distributionsByTaxonID = distributionReader.getIntegerKeyedSets(CoLDPDistribution::getTaxonID);
+                CSVReader<COLDPDistribution> distributionReader 
+                    = new CSVReader<>(fileNamePrefix + "distribution.csv", COLDPDistribution.class, ",");
+                distributionsByTaxonID = distributionReader.getIntegerKeyedSets(COLDPDistribution::getTaxonID);
             } else {
                 distributionsByTaxonID = new HashMap<>();
             }
@@ -144,9 +144,9 @@ public class CoLDPFormatterCSS {
 			writer.println("    <body>");
             }
             
-            CoLDPName parentName = names.get(taxonName);
-            CoLDPTaxon parent = taxaByNameID.get(parentName.getID());
-            Stack<CoLDPTaxon> higherTaxa = getHigherTaxa(parent);
+            COLDPName parentName = names.get(taxonName);
+            COLDPTaxon parent = taxaByNameID.get(parentName.getID());
+            Stack<COLDPTaxon> higherTaxa = getHigherTaxa(parent);
             
             writeTaxon(writer, null, higherTaxa, generateFullHtmlPage ? 2 : 0);
 
@@ -155,12 +155,12 @@ public class CoLDPFormatterCSS {
                 writer.println("</html>");
             }
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-            java.util.logging.Logger.getLogger(CoLDPFormatterCSS.class.getName()).log(Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(COLDPFormatterCSS.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
-    private static Stack<CoLDPTaxon> getHigherTaxa(CoLDPTaxon taxon) {
-        Stack<CoLDPTaxon> higherTaxa = new Stack<>();
+    private static Stack<COLDPTaxon> getHigherTaxa(COLDPTaxon taxon) {
+        Stack<COLDPTaxon> higherTaxa = new Stack<>();
         
         higherTaxa.push(taxon);
         while (taxon != null && taxon.getParentID() != null) {
@@ -173,7 +173,7 @@ public class CoLDPFormatterCSS {
         return higherTaxa;
     }
     
-    private static void writeTaxon(PrintWriter writer, CoLDPTaxon taxon, Stack<CoLDPTaxon> higherTaxa, int depth) {
+    private static void writeTaxon(PrintWriter writer, COLDPTaxon taxon, Stack<COLDPTaxon> higherTaxa, int depth) {
         if (higherTaxa != null) {
             taxon = higherTaxa.pop();
             if (higherTaxa.empty()) {
@@ -185,21 +185,21 @@ public class CoLDPFormatterCSS {
         for (int i = 0; i < depth; i++) prefix += INDENT;
 	String childPrefix = prefix + INDENT;
 		
-        Set<CoLDPReference> referenceList = new TreeSet<>(new BibliographicSort());
+        Set<COLDPReference> referenceList = new TreeSet<>(new BibliographicSort());
         if (taxon.getReferenceID() != null) {
             referenceList.add(references.get(taxon.getReferenceID()));
         }
         
-        CoLDPName name = namesByID.get(taxon.getNameID());
+        COLDPName name = namesByID.get(taxon.getNameID());
         String divClass = (higherTaxa == null) ? upperFirst(name.getRank()) : "HigherTaxon";
 	writer.println(prefix + "<div class=\"" + divClass + "\">");
         writeName(writer, name, childPrefix, referenceList, false, null);
         
-        Set<CoLDPSynonym> synonyms = synonymsByTaxonID.get(taxon.getID());
+        Set<COLDPSynonym> synonyms = synonymsByTaxonID.get(taxon.getID());
         if (synonyms != null && synonyms.size() > 0) {
             writer.println(childPrefix + "<div class=\"Synonyms\">");
             
-            for (CoLDPSynonym synonym : synonyms) {
+            for (COLDPSynonym synonym : synonyms) {
                 writeSynonym(writer, synonym, childPrefix + INDENT, referenceList);
             }
 
@@ -209,7 +209,7 @@ public class CoLDPFormatterCSS {
         if (referenceList.size() > 0) {
             writer.println(childPrefix + "<div class=\"References\">");
             
-            for (CoLDPReference reference : referenceList) {
+            for (COLDPReference reference : referenceList) {
                 writeReference(writer, reference, childPrefix + INDENT);
             }
 
@@ -221,9 +221,9 @@ public class CoLDPFormatterCSS {
         }
 
         if (higherTaxa == null) {
-            Set<CoLDPTaxon> children = childrenByParentID.get(taxon.getID());
+            Set<COLDPTaxon> children = childrenByParentID.get(taxon.getID());
             if (children != null) {
-                for (CoLDPTaxon child : children) {
+                for (COLDPTaxon child : children) {
                     writeTaxon(writer, child, null, depth + 1);
                 }
             }
@@ -234,8 +234,8 @@ public class CoLDPFormatterCSS {
         writer.println(prefix + "</div>");
     }
 
-    private static void writeName(PrintWriter writer, CoLDPName name, 
-            String prefix, Set<CoLDPReference> referenceList, boolean isSynonym,
+    private static void writeName(PrintWriter writer, COLDPName name, 
+            String prefix, Set<COLDPReference> referenceList, boolean isSynonym,
             String remarks) {
         
         String qualifier = "";
@@ -264,18 +264,18 @@ public class CoLDPFormatterCSS {
         writer.println(prefix + "</div>");
     }
     
-    private static void writeNameInformation(PrintWriter writer, CoLDPName name, String prefix, 
-                Set<CoLDPReference> referenceList, boolean isSynonym) {
+    private static void writeNameInformation(PrintWriter writer, COLDPName name, String prefix, 
+                Set<COLDPReference> referenceList, boolean isSynonym) {
         if (name.getReferenceID() != null) {
-            CoLDPReference reference = references.get(name.getReferenceID());
+            COLDPReference reference = references.get(name.getReferenceID());
             
             referenceList.add(reference);
         }
         
-        Set<CoLDPNameReference> nameReferences = nameReferencesByNameID.get(name.getID());
+        Set<COLDPNameReference> nameReferences = nameReferencesByNameID.get(name.getID());
         if (nameReferences != null) {
-            for (CoLDPNameReference nameReference : nameReferences) {
-                CoLDPReference reference = references.get(nameReference.getReferenceID());
+            for (COLDPNameReference nameReference : nameReferences) {
+                COLDPReference reference = references.get(nameReference.getReferenceID());
                 if (reference == null) {
                     LOG.error("Reference missing for NameReference: " + nameReference.toString());
                 }
@@ -291,25 +291,25 @@ public class CoLDPFormatterCSS {
         }
     }
     
-    private static void writeNameRelations(PrintWriter writer, CoLDPName name, String prefix, Set<CoLDPReference> referenceList) {
-        Set<CoLDPNameRelation> relations = relationsByNameID.get(name.getID());
+    private static void writeNameRelations(PrintWriter writer, COLDPName name, String prefix, Set<COLDPReference> referenceList) {
+        Set<COLDPNameRelation> relations = relationsByNameID.get(name.getID());
         if (relations != null) {
-            for (CoLDPNameRelation relation : relations) {
+            for (COLDPNameRelation relation : relations) {
                 writeNameRelation(writer, relation, prefix, true, name.getRank(), referenceList);
             }
         }
 
         relations = relationsByRelatedNameID.get(name.getID());
         if (relations != null) {
-            for (CoLDPNameRelation relation : relations) {
+            for (COLDPNameRelation relation : relations) {
                 writeNameRelation(writer, relation, prefix, false, name.getRank(), referenceList);
             }
         }
     }
 
-    private static void writeNameRelation(PrintWriter writer, CoLDPNameRelation relation, 
-            String prefix, boolean isSubject, String rankName, Set<CoLDPReference> referenceList) {
-        CoLDPName name = namesByID.get(isSubject ? relation.getRelatedNameID() : relation.getNameID());
+    private static void writeNameRelation(PrintWriter writer, COLDPNameRelation relation, 
+            String prefix, boolean isSubject, String rankName, Set<COLDPReference> referenceList) {
+        COLDPName name = namesByID.get(isSubject ? relation.getRelatedNameID() : relation.getNameID());
         String formatted = upperFirst(relation.getType());
         
         if (isSubject) {
@@ -353,14 +353,14 @@ public class CoLDPFormatterCSS {
             writer.println(prefix + wrapDiv("Relationship", formatted));
 
             if (relation.getReferenceID() != null) {
-                CoLDPReference reference = references.get(relation.getReferenceID());
+                COLDPReference reference = references.get(relation.getReferenceID());
                 referenceList.add(reference);
             }
         }
     }
 
-    private static void writeSynonym(PrintWriter writer, CoLDPSynonym synonym, String prefix, Set<CoLDPReference> referenceList) {
-        CoLDPName name = namesByID.get(synonym.getNameID());
+    private static void writeSynonym(PrintWriter writer, COLDPSynonym synonym, String prefix, Set<COLDPReference> referenceList) {
+        COLDPName name = namesByID.get(synonym.getNameID());
         String synonymRemarks = safeTrim(linkURLs(synonym.getRemarks()));
         
         if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
@@ -372,14 +372,14 @@ public class CoLDPFormatterCSS {
         writeName(writer, name, prefix + INDENT, referenceList, true, synonymRemarks);
 
         if (synonym.getReferenceID() != null) {
-            CoLDPReference reference = references.get(synonym.getReferenceID());
+            COLDPReference reference = references.get(synonym.getReferenceID());
             referenceList.add(reference);
         }
         
         writer.println(prefix + "</div>");
     }
 
-    private static void writeReference(PrintWriter writer, CoLDPReference reference, String prefix) {
+    private static void writeReference(PrintWriter writer, COLDPReference reference, String prefix) {
         String formatted = reference.getAuthor();
         if (reference.getYear() != null) {
             formatted += " (" + reference.getYear() + ") ";
@@ -404,7 +404,7 @@ public class CoLDPFormatterCSS {
         writer.println(prefix + wrapDiv("Reference", formatted));
     }
 
-    private static void writeNameReference(PrintWriter writer, CoLDPNameReference nameReference, CoLDPReference reference, String prefix) {
+    private static void writeNameReference(PrintWriter writer, COLDPNameReference nameReference, COLDPReference reference, String prefix) {
         String formatted = "Page reference";
                 
         if (nameReference.getRemarks() != null) {
@@ -431,7 +431,7 @@ public class CoLDPFormatterCSS {
         return name;
     }
 
-    private static String formatName(CoLDPName name) {
+    private static String formatName(COLDPName name) {
         String scientificName = name.getScientificName();
         switch (name.getRank()) {
             case "genus":

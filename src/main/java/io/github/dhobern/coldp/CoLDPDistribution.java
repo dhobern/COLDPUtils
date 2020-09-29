@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRenderable {
+public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPDistribution.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPDistribution.class);
      
     private Integer taxonID;
     private String area;
@@ -28,11 +28,11 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
     private Integer referenceID;
     private String remarks;
     
-    private CoLDPTaxon taxon;
-    private CoLDPRegion region;
-    private CoLDPReference reference;
+    private COLDPTaxon taxon;
+    private COLDPRegion region;
+    private COLDPReference reference;
 
-    public CoLDPDistribution() {
+    public COLDPDistribution() {
     }
 
     public Integer getTaxonID() {
@@ -47,11 +47,11 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
         }
     }
 
-    public CoLDPTaxon getTaxon() {
+    public COLDPTaxon getTaxon() {
         return taxon;
     }
 
-    public void setTaxon(CoLDPTaxon taxon) {
+    public void setTaxon(COLDPTaxon taxon) {
         if (this.taxon != null) {
             taxon.deregisterDistribution(this);
         }
@@ -74,11 +74,11 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
         }
     }
 
-    public CoLDPRegion getRegion() {
+    public COLDPRegion getRegion() {
         return region;
     }
 
-    public void setRegion(CoLDPRegion region) {
+    public void setRegion(COLDPRegion region) {
         if (this.region != null) {
             taxon.deregisterDistribution(this);
         }
@@ -117,11 +117,11 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
         }
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             this.reference.deregisterDistribution(this);
         }
@@ -162,7 +162,7 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPDistribution other = (CoLDPDistribution) obj;
+        final COLDPDistribution other = (COLDPDistribution) obj;
         if (!Objects.equals(this.getArea(), other.getArea())) {
             return false;
         }
@@ -187,7 +187,7 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
     }
 
     @Override
-    public int compareTo(CoLDPDistribution o) {
+    public int compareTo(COLDPDistribution o) {
         return this.toString().compareTo(o.toString());
     }
 
@@ -235,9 +235,9 @@ public class CoLDPDistribution implements Comparable<CoLDPDistribution>, TreeRen
             writer.println(context.getIndent() + wrapDiv("Region", formatted));
         }
     }
-    public static class RegionSort implements Comparator<CoLDPDistribution> { 
+    public static class RegionSort implements Comparator<COLDPDistribution> { 
         @Override
-        public int compare(CoLDPDistribution o1, CoLDPDistribution o2) {
+        public int compare(COLDPDistribution o1, COLDPDistribution o2) {
             int comparison;
             if (o1.region != null && o1.region.getName() != null 
                     && o2.region != null && o2.region.getName() != null) {

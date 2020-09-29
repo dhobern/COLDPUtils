@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRenderable {
+public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPNameRelation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPNameRelation.class);
       
     private Integer nameID;
     private Integer relatedNameID;
@@ -25,11 +25,11 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
     private Integer referenceID;
     private String remarks;
     
-    private CoLDPName name;
-    private CoLDPName relatedName;
-    private CoLDPReference reference;
+    private COLDPName name;
+    private COLDPName relatedName;
+    private COLDPReference reference;
 
-    public CoLDPNameRelation() {
+    public COLDPNameRelation() {
     }
 
     public Integer getNameID() {
@@ -44,11 +44,11 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
         }
     }
 
-    public CoLDPName getName() {
+    public COLDPName getName() {
         return name;
     }
 
-    public void setName(CoLDPName name) {
+    public void setName(COLDPName name) {
         if (this.name != null) {
             this.name.deregisterNameRelation(this);
         }
@@ -71,11 +71,11 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
         }
     }
 
-    public CoLDPName getRelatedName() {
+    public COLDPName getRelatedName() {
         return relatedName;
     }
 
-    public void setRelatedName(CoLDPName relatedName) {
+    public void setRelatedName(COLDPName relatedName) {
         if (this.relatedName != null) {
             this.relatedName.deregisterRelatedNameRelation(this);
         }
@@ -106,11 +106,11 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
         }
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             this.reference.deregisterNameRelation(this);
         }
@@ -151,7 +151,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPNameRelation other = (CoLDPNameRelation) obj;
+        final COLDPNameRelation other = (COLDPNameRelation) obj;
         if (!Objects.equals(this.type, other.type)) {
             return false;
         }
@@ -176,7 +176,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
     }
 
     @Override
-    public int compareTo(CoLDPNameRelation o) {
+    public int compareTo(COLDPNameRelation o) {
         return this.toString().compareTo(o.toString());
     }
 
@@ -195,9 +195,9 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            CoLDPName contextName = context.getCurrentName();
+            COLDPName contextName = context.getCurrentName();
             String formatted = upperFirst(type);
-            CoLDPName nameToRender;
+            COLDPName nameToRender;
 
             if (name.equals(contextName)) {
                 nameToRender = relatedName;
@@ -234,7 +234,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
                 formatted += " (" + upperFirst(linkURLs(remarks)) + ")";
             }
 
-            formatted += ": " + CoLDPName.formatName(nameToRender);
+            formatted += ": " + COLDPName.formatName(nameToRender);
 
             writer.println(context.getIndent() + wrapDiv("NameRelationship", formatted));
 

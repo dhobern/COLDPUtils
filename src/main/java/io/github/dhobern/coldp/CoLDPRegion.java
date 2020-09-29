@@ -16,16 +16,16 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPRegion {
+public class COLDPRegion {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPRegion.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPRegion.class);
       
     private String ID;
     private String name;
     
-    private Set<CoLDPDistribution> distributions;
+    private Set<COLDPDistribution> distributions;
 
-    public CoLDPRegion() {
+    public COLDPRegion() {
     }
 
     public String getID() {
@@ -44,11 +44,11 @@ public class CoLDPRegion {
         this.name = name;
     }
 
-    public Set<CoLDPDistribution> getDistributions() {
+    public Set<COLDPDistribution> getDistributions() {
         return distributions;
     }
 
-    void registerDistribution(CoLDPDistribution distribution) {
+    void registerDistribution(COLDPDistribution distribution) {
         if (distribution != null) {
             if (distributions == null) {
                 distributions = new HashSet<>();
@@ -57,7 +57,7 @@ public class CoLDPRegion {
         }
     }
  
-    void deregisterDistribution(CoLDPDistribution distribution) {
+    void deregisterDistribution(COLDPDistribution distribution) {
         if (distribution != null && distributions != null) {
             distributions.remove(distribution);
         }
@@ -81,7 +81,7 @@ public class CoLDPRegion {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPRegion other = (CoLDPRegion) obj;
+        final COLDPRegion other = (COLDPRegion) obj;
         if (!Objects.equals(this.ID, other.ID)) {
             return false;
         }

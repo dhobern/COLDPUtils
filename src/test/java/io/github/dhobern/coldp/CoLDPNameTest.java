@@ -16,9 +16,9 @@ import static org.junit.Assert.*;
  *
  * @author stang
  */
-public class CoLDPNameTest {
+public class COLDPNameTest {
     
-    public CoLDPNameTest() {
+    public COLDPNameTest() {
     }
     
     @BeforeClass

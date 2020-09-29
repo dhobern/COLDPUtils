@@ -22,11 +22,11 @@ import static org.junit.Assert.*;
  *
  * @author stang
  */
-public class CoLDataPackageTest {
+public class COLDataPackageTest {
     
-    private CoLDataPackage coldp; 
+    private COLDataPackage coldp; 
     
-    public CoLDataPackageTest() {
+    public COLDataPackageTest() {
     }
     
     @BeforeClass
@@ -39,7 +39,7 @@ public class CoLDataPackageTest {
     
     @Before
     public void setUp() {
-        coldp = new CoLDataPackage("mockdata");
+        coldp = new COLDataPackage("mockdata");
     }
     
     @After
@@ -48,37 +48,37 @@ public class CoLDataPackageTest {
 
     @Test
     public void testNameToReference() {
-        CoLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
-        CoLDPReference reference = name.getReference(); // New genera of Agdistidae and Pterophoridae
+        COLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
+        COLDPReference reference = name.getReference(); // New genera of Agdistidae and Pterophoridae
         
         assertEquals(reference.getTitle(), "New genera of Agdistidae and Pterophoridae");
     }
 
     @Test
     public void testNameRender() {
-        CoLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
+        COLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
         
         name.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "--> ", 3));
     }
     
     @Test
     public void testTaxonRender() {
-        CoLDPTaxon taxon = coldp.getTaxa().get(268); // Ochyroticinae
+        COLDPTaxon taxon = coldp.getTaxa().get(268); // Ochyroticinae
         
         taxon.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None));
     }
 
     @Test
     public void testRegionToTaxa() {
-        List<CoLDPTaxon> expected = new ArrayList<>(); 
+        List<COLDPTaxon> expected = new ArrayList<>(); 
         expected.add(coldp.getTaxa().get(271));
         expected.add(coldp.getTaxa().get(275));
         expected.add(coldp.getTaxa().get(277));
 
-        CoLDPRegion region = coldp.getRegions().get("PA"); // Paraguay
-        Set<CoLDPDistribution> distributions = region.getDistributions();
+        COLDPRegion region = coldp.getRegions().get("PA"); // Paraguay
+        Set<COLDPDistribution> distributions = region.getDistributions();
         assertEquals(3, distributions.size());
-        for (CoLDPDistribution distribution :  distributions) {
+        for (COLDPDistribution distribution :  distributions) {
             assert(expected.contains(distribution.getTaxon()));
         }
     }
@@ -86,7 +86,7 @@ public class CoLDataPackageTest {
     
     @Test
     public void testSomeMethod() {
-        for (CoLDPName name: coldp.getNames().values()) {
+        for (COLDPName name: coldp.getNames().values()) {
             System.out.println(name.getID() + ", " + name.getScientificName() + ": " 
                     + "B: " + (name.getBasionym() == null ? 0 : name.getBasionym().getID())  + " / " 
                     + "R: " + (name.getReference() == null ? 0 : name.getReference().getID()) + " / " 
@@ -97,27 +97,27 @@ public class CoLDataPackageTest {
                     + "Syns: " + (name.getSynonyms() == null ? -1 : name.getSynonyms().size()));
         }
         
-        for (CoLDPRegion region : coldp.getRegions().values()) {
+        for (COLDPRegion region : coldp.getRegions().values()) {
             if (region.getDistributions() != null) {
                 System.out.println(region.getName());
-                for (CoLDPDistribution distribution : region.getDistributions()) {
+                for (COLDPDistribution distribution : region.getDistributions()) {
                     System.out.println("    " + distribution.getTaxon().getName().getScientificName());
                 }
             }
         }
         
         int i = 1;
-        for (CoLDPName name : coldp.getNames().values()) {
+        for (COLDPName name : coldp.getNames().values()) {
             name.setID(i++);
         }
         
         i = 1;
-        for (CoLDPReference reference : coldp.getReferences().values()) {
+        for (COLDPReference reference : coldp.getReferences().values()) {
             reference.setID(i++);
         }
         
         i = 1;
-        for (CoLDPTaxon taxon : coldp.getTaxa().values()) {
+        for (COLDPTaxon taxon : coldp.getTaxa().values()) {
             taxon.setID(i++);
         }
         

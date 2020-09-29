@@ -5,7 +5,7 @@
  */
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.coldp.CoLDPDistribution.RegionSort;
+import io.github.dhobern.coldp.COLDPDistribution.RegionSort;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
@@ -22,9 +22,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
+public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     
-    private static final Logger LOG = LoggerFactory.getLogger(CoLDPTaxon.class);
+    private static final Logger LOG = LoggerFactory.getLogger(COLDPTaxon.class);
    
     private Integer ID;
     private Integer parentID;
@@ -47,14 +47,14 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     private String species;
     private String remarks;
     
-    private Set<CoLDPTaxon> children;
-    private CoLDPTaxon parent;
-    private CoLDPName name;
-    private CoLDPReference reference;
-    private Set<CoLDPSynonym> synonyms;
-    private Set<CoLDPDistribution> distributions;
+    private Set<COLDPTaxon> children;
+    private COLDPTaxon parent;
+    private COLDPName name;
+    private COLDPReference reference;
+    private Set<COLDPSynonym> synonyms;
+    private Set<COLDPDistribution> distributions;
 
-    public CoLDPTaxon() {
+    public COLDPTaxon() {
     }
 
     public Integer getID() {
@@ -77,11 +77,11 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
 
-    public CoLDPTaxon getParent() {
+    public COLDPTaxon getParent() {
         return parent;
     }
 
-    public void setParent(CoLDPTaxon parent) {
+    public void setParent(COLDPTaxon parent) {
         if (this.parent != null) {
             this.parent.deregisterChild(this);
         }
@@ -92,11 +92,11 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
 
-    public Set<CoLDPTaxon> getChildren() {
+    public Set<COLDPTaxon> getChildren() {
         return children;
     }
 
-    void registerChild(CoLDPTaxon child) {
+    void registerChild(COLDPTaxon child) {
         if (child != null) {
             if (children == null) {
                 children = new TreeSet<>(new AlphabeticalSortByScientificName());
@@ -105,7 +105,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
  
-    void deregisterChild(CoLDPTaxon child) {
+    void deregisterChild(COLDPTaxon child) {
         if (child != null && children != null) {
             children.remove(child);
         }
@@ -123,11 +123,11 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
 
-    public CoLDPName getName() {
+    public COLDPName getName() {
         return name;
     }
 
-    public void setName(CoLDPName name) {
+    public void setName(COLDPName name) {
         this.name = name;
         nameID = null;
         if (name != null) {
@@ -163,11 +163,11 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
 
-    public CoLDPReference getReference() {
+    public COLDPReference getReference() {
         return reference;
     }
 
-    public void setReference(CoLDPReference reference) {
+    public void setReference(COLDPReference reference) {
         if (this.reference != null) {
             this.reference.deregisterTaxon(this);
         }
@@ -290,11 +290,11 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         this.remarks = remarks;
     }
 
-    public Set<CoLDPSynonym> getSynonyms() {
+    public Set<COLDPSynonym> getSynonyms() {
         return synonyms;
     }
 
-    void registerSynonym(CoLDPSynonym synonym) {
+    void registerSynonym(COLDPSynonym synonym) {
         if (synonym != null) {
             if (synonyms == null) {
                 synonyms = new HashSet<>();
@@ -303,17 +303,17 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
  
-    void deregisterSynonym(CoLDPSynonym synonym) {
+    void deregisterSynonym(COLDPSynonym synonym) {
         if (synonym != null && synonyms != null) {
             synonyms.remove(synonym);
         }
     }
 
-    public Set<CoLDPDistribution> getDistributions() {
+    public Set<COLDPDistribution> getDistributions() {
         return distributions;
     }
 
-    void registerDistribution(CoLDPDistribution distribution) {
+    void registerDistribution(COLDPDistribution distribution) {
         if (distribution != null) {
             if (distributions == null) {
                 distributions = new TreeSet<>(new RegionSort());
@@ -322,7 +322,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         }
     }
  
-    void deregisterDistribution(CoLDPDistribution distribution) {
+    void deregisterDistribution(COLDPDistribution distribution) {
         if (distribution != null && distributions != null) {
             distributions.remove(distribution);
         }
@@ -346,7 +346,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final CoLDPTaxon other = (CoLDPTaxon) obj;
+        final COLDPTaxon other = (COLDPTaxon) obj;
         if (!Objects.equals(this.ID, other.ID)) {
             return false;
         }
@@ -354,29 +354,29 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     }
 
     @Override
-    public int compareTo(CoLDPTaxon o) {
+    public int compareTo(COLDPTaxon o) {
         return this.getID().compareTo(o.getID());
     }
 
-    public static class AlphabeticalSort implements Comparator<CoLDPTaxon> { 
+    public static class AlphabeticalSort implements Comparator<COLDPTaxon> { 
         
-        private final Map<Integer, CoLDPName> names;
+        private final Map<Integer, COLDPName> names;
         
         private AlphabeticalSort() {
             names = null;
         }
         
-        public AlphabeticalSort(Map<Integer, CoLDPName> names) {
+        public AlphabeticalSort(Map<Integer, COLDPName> names) {
             this.names = names;
         }
 
         @Override
-        public int compare(CoLDPTaxon o1, CoLDPTaxon o2) {
+        public int compare(COLDPTaxon o1, COLDPTaxon o2) {
             int comparison;
             
             if (names != null) {
-                CoLDPName n1 = names.get(o1.getNameID());
-                CoLDPName n2 = names.get(o2.getNameID());
+                COLDPName n1 = names.get(o1.getNameID());
+                COLDPName n2 = names.get(o2.getNameID());
                 comparison = n1.getScientificName().compareTo(n2.getScientificName());
             } else {
                 comparison = o1.compareTo(o2);
@@ -387,9 +387,9 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
     }
 
     
-    public static class AlphabeticalSortByScientificName implements Comparator<CoLDPTaxon> { 
+    public static class AlphabeticalSortByScientificName implements Comparator<COLDPTaxon> { 
         @Override
-        public int compare(CoLDPTaxon o1, CoLDPTaxon o2) {
+        public int compare(COLDPTaxon o1, COLDPTaxon o2) {
             return o1.getName().getScientificName().compareTo(o2.getName().getScientificName());
         }
     }
@@ -451,7 +451,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
             }
 
             if (recursive && children != null) {
-                for (CoLDPTaxon taxon : children) {
+                for (COLDPTaxon taxon : children) {
                     taxon.render(writer, new TreeRenderProperties(context, this, ContextType.Taxon, true));
                 }
             }
@@ -464,7 +464,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             writer.println(context.getIndent() + "<div class=\"Synonyms\">");
 
-            for (CoLDPSynonym synonym : synonyms) {
+            for (COLDPSynonym synonym : synonyms) {
                 synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
             }
 
@@ -476,7 +476,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             writer.println(context.getIndent() + "<div class=\"References\">");
 
-            for (CoLDPReference reference : context.getReferenceList()) {
+            for (COLDPReference reference : context.getReferenceList()) {
                 reference.render(writer, new TreeRenderProperties(context, this, ContextType.References));
             }
 
@@ -488,7 +488,7 @@ public class CoLDPTaxon implements Comparable<CoLDPTaxon>, TreeRenderable {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             writer.println(context.getIndent() + "<div class=\"Distribution\">Distribution: ");
 
-            for (CoLDPDistribution distribution : distributions) {
+            for (COLDPDistribution distribution : distributions) {
                 distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));
             }
 
