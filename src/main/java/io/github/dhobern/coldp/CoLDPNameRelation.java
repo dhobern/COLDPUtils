@@ -197,8 +197,10 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             CoLDPName contextName = context.getCurrentName();
             String formatted = upperFirst(type);
+            CoLDPName nameToRender;
 
             if (name.equals(contextName)) {
+                nameToRender = relatedName;
                 switch(formatted) {
                     case "Type":
                         if (contextName.getRank().equals("genus")) {
@@ -211,6 +213,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
                         break;
                 }
             } else {
+                nameToRender = name;
                 switch(formatted) {
                     case "Type":
                         if (contextName.getRank().equals("family")) {
@@ -231,7 +234,7 @@ public class CoLDPNameRelation implements Comparable<CoLDPNameRelation>, TreeRen
                 formatted += " (" + upperFirst(linkURLs(remarks)) + ")";
             }
 
-            formatted += ": " + CoLDPName.formatName(name);
+            formatted += ": " + CoLDPName.formatName(nameToRender);
 
             writer.println(context.getIndent() + wrapDiv("NameRelationship", formatted));
 
