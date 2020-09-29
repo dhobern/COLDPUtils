@@ -196,6 +196,19 @@ public class COLDPTool {
         boolean continueExecution = parseValidateComandLine(arguments);
 
         COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+        
+        for (COLDPName name : coldp.getNames().values()) {
+            if (name.getBasionymID() == null) {
+                outputText("Basionym not specified: " + name.toCSV());
+            } else if (name.getID() != name.getBasionymID()) {
+                COLDPName basionym = name.getBasionym();
+                if (    basionym.getReferenceID() != null 
+                     && name.getReferenceID() != null
+                     && basionym.getReferenceID().equals(name.getReferenceID())) {
+                    outputText("Name shares reference with basionym: " + name.getID() + " " + name.getScientificName() + " " + name.getAuthorship());
+                }
+            }
+        }
     }
     
     private static void renderTaxon(PrintWriter writer, COLDPTaxon taxon) {
