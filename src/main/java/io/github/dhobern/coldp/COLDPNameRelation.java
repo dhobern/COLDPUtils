@@ -204,12 +204,18 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
                 switch(formatted) {
                     case "Type":
                         if (contextName.getRank().equals("genus")) {
-                            formatted = "Type genus for family";
+                            formatted = "Is type for family";
                         } else if (contextName.getRank().equals("species")) {
-                            formatted = "Type for genus";
+                            formatted = "Is type for genus";
                         } else {
-                            formatted = "Type for";
+                            formatted = "Is type for";
                         }
+                        break;
+                    case "Basionym":
+                        formatted = "Has basionym";
+                        break;
+                    case "Later homonym":
+                        formatted = "Is later homonym of";
                         break;
                 }
             } else {
@@ -217,15 +223,18 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
                 switch(formatted) {
                     case "Type":
                         if (contextName.getRank().equals("family")) {
-                            formatted = "Type genus";
+                            formatted = "Has type genus";
                         } else if (contextName.getRank().equals("genus")) {
-                            formatted = "Type species";
+                            formatted = "Has type species";
                         } else {
-                            formatted = "Type";
+                            formatted = "Has type";
                         }
                         break;
                     case "Basionym":
-                        formatted = "Basionym for";
+                        formatted = "Is basionym for";
+                        break;
+                    case "Later homonym":
+                        formatted = "Has later homonym";
                         break;
                 }
             }
