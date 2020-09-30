@@ -352,6 +352,13 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         }
         return true;
     }
+    
+    private String getNameWithAuthorship() {
+        if (name != null) {
+            return name.getScientificName() + " " + name.getAuthorship();
+        }
+        return null;
+    }
 
     @Override
     public int compareTo(COLDPTaxon o) {
@@ -374,10 +381,8 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         public int compare(COLDPTaxon o1, COLDPTaxon o2) {
             int comparison;
             
-            if (names != null) {
-                COLDPName n1 = names.get(o1.getNameID());
-                COLDPName n2 = names.get(o2.getNameID());
-                comparison = n1.getScientificName().compareTo(n2.getScientificName());
+            if (o1.name != null && o2.name != null) {
+                comparison = o1.getNameWithAuthorship().compareTo(o2.getNameWithAuthorship());
             } else {
                 comparison = o1.compareTo(o2);
             }
@@ -390,7 +395,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     public static class AlphabeticalSortByScientificName implements Comparator<COLDPTaxon> { 
         @Override
         public int compare(COLDPTaxon o1, COLDPTaxon o2) {
-            return o1.getName().getScientificName().compareTo(o2.getName().getScientificName());
+            return o1.getNameWithAuthorship().compareTo(o2.getNameWithAuthorship());
         }
     }
 
