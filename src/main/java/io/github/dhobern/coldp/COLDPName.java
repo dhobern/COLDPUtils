@@ -327,6 +327,31 @@ public class COLDPName implements TreeRenderable {
         }
     }
     
+    public COLDPNameReference getRedundantNameReference(boolean allFields) {
+        if (reference != null && nameReferences != null) {
+            for (COLDPNameReference nr : nameReferences) {
+                if (!nr.getReference().equals(reference)) continue;
+                
+                if (publishedInPage != null) {
+                    if (nr.getPage() == null || !nr.getPage().equals(publishedInPage)) continue;
+                } else if (nr.getPage() != null) continue;
+                
+                if (allFields) {
+                    if (link != null) {
+                        if (nr.getLink() == null || !nr.getLink().equals(link)) continue;
+                    } else if (nr.getLink() != null) continue;
+
+                    if (remarks != null) {
+                        if (nr.getRemarks() == null || !nr.getRemarks().equals(remarks)) continue;
+                    } else if (nr.getRemarks() != null) continue;
+                }
+                
+                return nr;
+            }
+        }
+        return null;
+    }
+    
     @Override
     public String toString() {
         return "CoLDP_Name{" + "ID=" + ID + ", basionymID=" + getBasionymID() + ", scientificName=" + scientificName + ", authorship=" + authorship + ", rank=" + rank + ", uninomial=" + uninomial + ", genus=" + genus + ", specificEpithet=" + specificEpithet + ", infraspecificEpithet=" + infraspecificEpithet + ", referenceID=" + getReferenceID() + ", publishedInPage=" + publishedInPage + ", publishedInYear=" + publishedInYear + ", code=" + code + ", status=" + status + ", remarks=" + remarks + ", link=" + link + '}';

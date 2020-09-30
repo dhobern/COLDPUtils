@@ -74,7 +74,8 @@ public class COLDPTool {
         NAME_NO_BASIONYM(ValidationSeverity.ERROR, "No basionym specified for combination"),
         NAME_NO_REFERENCE(ValidationSeverity.ERROR, "No reference specified for original name"),
         NAME_SAME_REFERENCE_BASIONYM(ValidationSeverity.ERROR, "Same reference specified for basionym and combination"),
-        COMBINATION_NO_REFERENCE(ValidationSeverity.WARNING, "No reference specified for combination")
+        COMBINATION_NO_REFERENCE(ValidationSeverity.WARNING, "No reference specified for combination"),
+        NAMEREFERENCE_REDUNDANT(ValidationSeverity.INFO, "Name reference repeats information from name")
         ;
         
         private ValidationSeverity severity;
@@ -315,6 +316,13 @@ public class COLDPTool {
                                     : ValidationCode.COMBINATION_NO_REFERENCE, 
                                 "name", name.getID().toString(), 
                                 name.getScientificName() + " " + name.getAuthorship());
+                    } else {
+                        COLDPNameReference nr = name.getRedundantNameReference(true);
+                        if (nr != null) {
+                            logIssue(ValidationCode.NAMEREFERENCE_REDUNDANT, "name",
+                                     name.getID().toString(), 
+                                     name.getScientificName() + " " + name.getAuthorship() + " --> " + nr.toCsv());
+                        }
                     }
                 }
 

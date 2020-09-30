@@ -228,7 +228,7 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
                             formatted = "Has type species";
                         } else {
                             formatted = "Has type";
-                        }
+                        }   
                         break;
                     case "Basionym":
                         formatted = "Is basionym for";
