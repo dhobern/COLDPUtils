@@ -16,6 +16,7 @@
 
 package io.github.dhobern.coldp;
 
+import static io.github.dhobern.utils.StringUtils.buildCSV;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import java.io.BufferedReader;
@@ -197,17 +198,43 @@ public class COLDPTool {
 
         COLDataPackage coldp = new COLDataPackage(coldpFolderName);
         
-        for (COLDPName name : coldp.getNames().values()) {
-            if (name.getBasionymID() == null) {
-                outputText("Basionym not specified: " + name.toCSV());
-            } else if (name.getID() != name.getBasionymID()) {
-                COLDPName basionym = name.getBasionym();
-                if (    basionym.getReferenceID() != null 
-                     && name.getReferenceID() != null
-                     && basionym.getReferenceID().equals(name.getReferenceID())) {
-                    outputText("Name shares reference with basionym: " + name.getID() + " " + name.getScientificName() + " " + name.getAuthorship());
+        PrintWriter writer = null;
+        
+        if (outputFileName == null) {
+            writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+        } else if (!overwrite && new File(outputFileName).exists()) {
+            reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+            continueExecution = false;
+        } else {
+            try {
+                writer = new PrintWriter(outputFileName, "UTF-8");
+            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
+            }
+        }
+
+        if (continueExecution && writer != null) {
+
+            writer.println("recordType,ID,text,issue");
+            
+            for (COLDPName name : coldp.getNames().values()) {
+                if (name.getBasionymID() == null) {
+                    writer.println(buildCSV("name", name.getID().toString(), 
+                        name.getScientificName() + " " + name.getAuthorship(), 
+                        "Basionym not specified"));
+                } else if (name.getID() != name.getBasionymID()) {
+                    COLDPName basionym = name.getBasionym();
+                    if (    basionym.getReferenceID() != null 
+                         && name.getReferenceID() != null
+                         && basionym.getReferenceID().equals(name.getReferenceID())) {
+                        writer.println(buildCSV("name", name.getID().toString(), 
+                            name.getScientificName() + " " + name.getAuthorship(), 
+                            "Name shares reference with basionym"));
+                    }
                 }
             }
+            
+            writer.close();
         }
     }
     
@@ -462,7 +489,9 @@ public class COLDPTool {
     private static boolean parseValidateComandLine(String[] argv) {
         CommandLine command = null;
         Options options = new Options();
-        options.addOption("h", "help", false, "Show help")
+        options.addOption("x", "overwrite", false, "Overwrite existing output file")
+                .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
+                .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose");
 
         CommandLineParser parser = new DefaultParser();
@@ -475,6 +504,23 @@ public class COLDPTool {
 
         if (command != null) {
             boolean verbose = command.hasOption("v");
+            
+            for (Option o : command.getOptions()) {
+                switch (o.getOpt()) {
+                    case "o":
+                        outputFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Output file name: " + outputFileName);
+                        }
+                        break;
+                    case "x":
+                        overwrite = true;
+                        if (verbose) {
+                            reportInfo("Overwrite existing output file: Yes");
+                        }
+                        break;
+                }
+            }
             
             if (command != null) {
                 String[] args = command.getArgs();

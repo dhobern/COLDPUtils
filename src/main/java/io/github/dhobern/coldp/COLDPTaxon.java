@@ -431,7 +431,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                 context.addReference(reference);
             }
 
-            writer.println(context.getIndent() + "<div class=\"" + divClass + "\">");
+            writer.println(context.getIndent() + "<div class=\"" + divClass + "\" id=\"taxon-" + ID + "\">");
             name.render(writer, new TreeRenderProperties(context, this, childContextType));
 
             if (synonyms != null && synonyms.size() > 0) {
