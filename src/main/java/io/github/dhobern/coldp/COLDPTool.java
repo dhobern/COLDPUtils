@@ -51,6 +51,52 @@ import org.slf4j.LoggerFactory;
 public class COLDPTool {
 
     /**
+     * Enumeration of validation severities
+     */
+    private static enum ValidationSeverity {
+        ERROR(0), WARNING(1), INFO(2);
+        
+        private int threshold;
+        
+        private ValidationSeverity(int threshold) {
+            this.threshold = threshold;
+        }
+        
+        public int getThreshold() {
+            return threshold;
+        }
+    }
+    
+    /**
+     * Enumeration of validation codes
+     */
+    private static enum ValidationCode {
+        NAME_NO_BASIONYM(ValidationSeverity.ERROR, "No basionym specified for combination"),
+        NAME_NO_REFERENCE(ValidationSeverity.ERROR, "No reference specified for original name"),
+        NAME_SAME_REFERENCE_BASIONYM(ValidationSeverity.ERROR, "Same reference specified for basionym and combination"),
+        COMBINATION_NO_REFERENCE(ValidationSeverity.WARNING, "No reference specified for combination")
+        ;
+        
+        private ValidationSeverity severity;
+        private String message;
+        
+        private ValidationCode() {}
+        
+        private ValidationCode(ValidationSeverity severity, String message) {
+            this.severity = severity;
+            this.message = message;
+        }
+
+        public ValidationSeverity getSeverity() {
+            return severity;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
+    /**
      * Enumeration of command names
      */
     private static enum CommandName {
@@ -89,9 +135,14 @@ public class COLDPTool {
     private static String coldpFolderName;
     private static String outputFolderName;
     private static String outputFileName;
+    private static String logFileName;
+    private static ValidationSeverity logThreshold = ValidationSeverity.WARNING;
+    private static PrintWriter logWriter;
     private static BufferedReader templateReader;
     private static int indentCount = 0;
     private static IdentifierStyle identifierStyle = IdentifierStyle.None;
+    private static int[] issueCounts = { 0, 0, 0 };
+    private static boolean verbose = false;
     
     private static OutputFormat format = OutputFormat.HTML;
     private static String newCsvSuffix = "-NEW";
@@ -128,14 +179,90 @@ public class COLDPTool {
             case MODIFY -> executeModify(arguments);
             case VALIDATE -> executeValidate(arguments);
         }
+        
+        if (logWriter != null) {
+            logWriter.close();
+        }
+        
+        if (verbose && (issueCounts[0] + issueCounts[1] > 0)) {
+            reportInfo("Issues detected in data: " + issueCounts[0] + " Errors, " + issueCounts[1] + " Warnings");
+            reportInfo("Run COLDPTool VALIDATE to review");
+        }
     }
     
     private static void executeToHTML(String[] arguments) {
         boolean continueExecution = parseToHTMLComandLine(arguments);
-
-        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
         
-        if (format == OutputFormat.HTML) {
+        if (continueExecution) {
+           
+            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
+            if (format == OutputFormat.HTML) {
+                PrintWriter writer = null;
+
+                if (outputFileName == null) {
+                    writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+                } else if (!overwrite && new File(outputFileName).exists()) {
+                    reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+                    continueExecution = false;
+                } else {
+                    try {
+                        writer = new PrintWriter(outputFileName, "UTF-8");
+                    } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                        reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
+                    }
+                }
+
+                if (continueExecution && writer != null) {
+
+                    if (templateReader != null) {
+                        writeTemplate(writer, templateReader, templateEyecatcherText);
+                    }
+
+                    if(selectedTaxonName != null) {
+                        COLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+
+                        if (taxon == null) {
+                            reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
+                        } else {
+                            renderHigherTaxa(writer, taxon);
+                            renderTaxon(writer, taxon);
+                        }
+                    } else {
+                        for(COLDPTaxon taxon : coldp.getRootTaxa()) {
+                            renderTaxon(writer, taxon);
+                        }
+                    }
+
+                    if (templateReader != null) {
+                        writeTemplate(writer, templateReader, null);
+                    }
+
+                    writer.close();
+                }
+            }
+        }
+    }
+    
+    private static void executeModify(String[] arguments) {
+        if (parseModifyComandLine(arguments)) {
+
+            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
+            if (identifierStyle == IdentifierStyle.Int) {
+                coldp.tidyIdentifiers();
+            }
+
+            coldp.write(outputFolderName, newCsvSuffix, overwrite);
+        }
+    }
+    
+    private static void executeValidate(String[] arguments) {
+        boolean continueExecution = parseValidateComandLine(arguments);
+        
+        if (continueExecution) {
+            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
             PrintWriter writer = null;
 
             if (outputFileName == null) {
@@ -151,90 +278,48 @@ public class COLDPTool {
                 }
             }
 
-            if (continueExecution && writer != null) {
+            if (continueExecution && logWriter != null) {
 
-                if (templateReader != null) {
-                    writeTemplate(writer, templateReader, templateEyecatcherText);
-                }
+                for (COLDPName name : coldp.getNames().values()) {
 
-                if(selectedTaxonName != null) {
-                    COLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+                    // Is the basionym supplied (default is self-reference for
+                    // original combination)? 
+                    //      --> NAME_NO_BASIONYM
 
-                    if (taxon == null) {
-                        reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
-                    } else {
-                        renderHigherTaxa(writer, taxon);
-                        renderTaxon(writer, taxon);
+                    // If the basionym is different from the current name, does
+                    // the name have the same reference as the basionym? 
+                    //      --> NAME_SAME_REFERENCE_BASIONYM
+
+                    if (name.getBasionymID() == null) {
+                        logIssue(ValidationCode.NAME_NO_BASIONYM, "name", 
+                                name.getID().toString(), 
+                                name.getScientificName() + " " + name.getAuthorship());
+                    } else if (!name.getID().equals(name.getBasionymID())) {
+                        COLDPName basionym = name.getBasionym();
+                        if (    basionym.getReferenceID() != null 
+                             && name.getReferenceID() != null
+                             && basionym.getReferenceID().equals(name.getReferenceID())) {
+                            logIssue(ValidationCode.NAME_SAME_REFERENCE_BASIONYM, "name", name.getID().toString(), 
+                                name.getScientificName() + " " + name.getAuthorship());
+                        }
                     }
-                } else {
-                    for(COLDPTaxon taxon : coldp.getRootTaxa()) {
-                        renderTaxon(writer, taxon);
-                    }
-                }
 
-                if (templateReader != null) {
-                    writeTemplate(writer, templateReader, null);
+                    // Is the reference supplied for an original combination? 
+                    //      --> NAME_NO_REFERENCE                
+                    // Is the reference supplied for an subsequent combination? 
+                    //      --> COMBINATION_NO_REFERENCE
+
+                    if (name.getReferenceID() == null) {
+                        logIssue(name.getID().equals(name.getBasionymID())
+                                    ? ValidationCode.NAME_NO_REFERENCE
+                                    : ValidationCode.COMBINATION_NO_REFERENCE, 
+                                "name", name.getID().toString(), 
+                                name.getScientificName() + " " + name.getAuthorship());
+                    }
                 }
 
                 writer.close();
             }
-        }
-    }
-    
-    private static void executeModify(String[] arguments) {
-        boolean continueExecution = parseModifyComandLine(arguments);
-
-        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
-        
-        if (identifierStyle == IdentifierStyle.Int) {
-            coldp.tidyIdentifiers();
-        }
-
-        coldp.write(outputFileName, newCsvSuffix, overwrite);
-    }
-    
-    private static void executeValidate(String[] arguments) {
-        boolean continueExecution = parseValidateComandLine(arguments);
-
-        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
-        
-        PrintWriter writer = null;
-        
-        if (outputFileName == null) {
-            writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
-        } else if (!overwrite && new File(outputFileName).exists()) {
-            reportError("File exists: " + outputFileName + " - specify -x to overwrite");
-            continueExecution = false;
-        } else {
-            try {
-                writer = new PrintWriter(outputFileName, "UTF-8");
-            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
-            }
-        }
-
-        if (continueExecution && writer != null) {
-
-            writer.println("recordType,ID,text,issue");
-            
-            for (COLDPName name : coldp.getNames().values()) {
-                if (name.getBasionymID() == null) {
-                    writer.println(buildCSV("name", name.getID().toString(), 
-                        name.getScientificName() + " " + name.getAuthorship(), 
-                        "Basionym not specified"));
-                } else if (name.getID() != name.getBasionymID()) {
-                    COLDPName basionym = name.getBasionym();
-                    if (    basionym.getReferenceID() != null 
-                         && name.getReferenceID() != null
-                         && basionym.getReferenceID().equals(name.getReferenceID())) {
-                        writer.println(buildCSV("name", name.getID().toString(), 
-                            name.getScientificName() + " " + name.getAuthorship(), 
-                            "Name shares reference with basionym"));
-                    }
-                }
-            }
-            
-            writer.close();
         }
     }
     
@@ -270,6 +355,8 @@ public class COLDPTool {
                 .addOption("t", "taxon", true, "Name of focus taxon")
                 .addOption("f", "format", true, "Output format, defaults to HTML")
                 .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
+                .addOption("l", "log-file", true, "Log file name")
+                .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
                 .addOption("i", "initial-indent", true, "Initial indent level (two spaces per level)")
                 .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose")
@@ -293,7 +380,7 @@ public class COLDPTool {
         }
 
         if (command != null) {
-            boolean verbose = command.hasOption("v");
+            verbose = command.hasOption("v");
             
             for (Option o : command.getOptions()) {
                 switch (o.getOpt()) {
@@ -324,6 +411,22 @@ public class COLDPTool {
                         outputFileName = o.getValue();
                         if (verbose) {
                             reportInfo("Output file name: " + outputFileName);
+                        }
+                        break;
+                    case "l":
+                        logFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Log file name: " + logFileName);
+                        }
+                        break;
+                    case "L":
+                        try {
+                            logThreshold = ValidationSeverity.valueOf(o.getValue().toUpperCase());
+                            if (verbose) {
+                                reportInfo("Log threshold: " + logThreshold.name());
+                            }
+                        } catch(Exception e) {
+                            reportError("Invalid log threshold : " + o.getValue());
                         }
                         break;
                     case "i":
@@ -385,6 +488,10 @@ public class COLDPTool {
             showHelp(options);
             command = null;
         }
+        
+        if (command != null && !openLogWriter()) {
+            command = null;
+        }
 
         return (command != null);
     }
@@ -394,6 +501,8 @@ public class COLDPTool {
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
                 .addOption("o", "output-folder", true, "Output folder name")
+                .addOption("l", "log-file", true, "Log file name")
+                .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
                 .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose")
                 .addOption("S", "suffix", true, 
@@ -414,7 +523,7 @@ public class COLDPTool {
         }
 
         if (command != null) {
-            boolean verbose = command.hasOption("v");
+            verbose = command.hasOption("v");
             
             for (Option o : command.getOptions()) {
                 switch (o.getOpt()) {
@@ -422,6 +531,22 @@ public class COLDPTool {
                         outputFolderName = o.getValue();
                         if (verbose) {
                             reportInfo("Output folder name: " + outputFolderName);
+                        }
+                        break;
+                    case "l":
+                        logFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Log file name: " + logFileName);
+                        }
+                        break;
+                    case "L":
+                        try {
+                            logThreshold = ValidationSeverity.valueOf(o.getValue().toUpperCase());
+                            if (verbose) {
+                                reportInfo("Log threshold: " + logThreshold.name());
+                            }
+                        } catch(Exception e) {
+                            reportError("Invalid log threshold : " + o.getValue());
                         }
                         break;
                     case "x":
@@ -483,6 +608,10 @@ public class COLDPTool {
             command = null;
         }
 
+        if (command != null && !openLogWriter()) {
+            command = null;
+        }
+
         return (command != null);
     }
 
@@ -490,7 +619,8 @@ public class COLDPTool {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
-                .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
+                .addOption("l", "log-file", true, "Log file name (defaults to stdout)")
+                .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
                 .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose");
 
@@ -503,14 +633,24 @@ public class COLDPTool {
         }
 
         if (command != null) {
-            boolean verbose = command.hasOption("v");
+            verbose = command.hasOption("v");
             
             for (Option o : command.getOptions()) {
                 switch (o.getOpt()) {
-                    case "o":
-                        outputFileName = o.getValue();
+                    case "l":
+                        logFileName = o.getValue();
                         if (verbose) {
-                            reportInfo("Output file name: " + outputFileName);
+                            reportInfo("Log file name: " + logFileName);
+                        }
+                        break;
+                    case "L":
+                        try {
+                            logThreshold = ValidationSeverity.valueOf(o.getValue().toUpperCase());
+                            if (verbose) {
+                                reportInfo("Log threshold: " + logThreshold.name());
+                            }
+                        } catch(Exception e) {
+                            reportError("Invalid log threshold : " + o.getValue());
                         }
                         break;
                     case "x":
@@ -550,7 +690,31 @@ public class COLDPTool {
             command = null;
         }
 
+        if (command != null && !openLogWriter()) {
+            command = null;
+        }
+
         return (command != null);
+    }
+
+    private static boolean openLogWriter() {
+        boolean success = true;
+        
+        if (logFileName == null) {
+            logWriter = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+        } else if (!overwrite && new File(logFileName).exists()) {
+            reportError("Log file exists: " + logFileName + " - specify -x to overwrite");
+            success = false;
+        } else {
+            try {
+                logWriter = new PrintWriter(logFileName, "UTF-8");
+                logWriter.println("category,severity,issue,ID,text");
+
+            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                reportError("Could not open log file [" + logFileName + "]:\n" + ex);
+            }
+        }
+        return success;
     }
 
     private static void writeTemplate(PrintWriter writer, BufferedReader templateReader, String stopLine) {
@@ -567,6 +731,20 @@ public class COLDPTool {
             }
         } catch (IOException e) {
             reportError("Failed to copy template to output file: " + e.toString());    
+        }
+    }
+    
+    private static void logIssue(ValidationCode code, String category, String associatedID, String text) {
+        issueCounts[code.getSeverity().getThreshold()]++;
+        
+        if (code.getSeverity().getThreshold() <= logThreshold.getThreshold()) {
+            String formatted;
+            if (logFileName != null) {
+                formatted = buildCSV(category, code.getSeverity().name(), code.getMessage(), associatedID, text);
+            } else {
+                formatted = code.getSeverity().name() + ": " + code.getMessage() + ": [" + associatedID + "] " + text;
+            }
+            logWriter.println(formatted);
         }
     }
 
