@@ -197,7 +197,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     
     public String toCsv() {
         return buildCSV(safeString(getTaxonID()), getArea(), gazetteer, status,
-                        safeString(referenceID), remarks);
+                        safeString(getReferenceID()), remarks);
     }
 
     @Override
