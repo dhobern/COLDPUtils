@@ -69,6 +69,25 @@ public class COLDataPackageTest {
     }
 
     @Test
+    public void testDeleteNameReference() {
+        int count = coldp.getNameReferences().size();
+        
+        COLDPName name = coldp.getNames().get(3060); // Agdistopis
+        assertEquals(1, name.getNameReferences().size());
+        
+        COLDPNameReference nr = name.getNameReferences().iterator().next();
+        COLDPReference reference = nr.getReference();
+        assertEquals(813, reference.getID().longValue());
+        assertEquals(2, reference.getNameReferences().size());
+        
+        assertTrue(coldp.deleteNameReference(nr));
+        
+        assertEquals(0, name.getNameReferences().size());
+        assertEquals(1, reference.getNameReferences().size());
+        assertEquals(count - 1, coldp.getNameReferences().size());
+    }
+
+    @Test
     public void testRegionToTaxa() {
         List<COLDPTaxon> expected = new ArrayList<>(); 
         expected.add(coldp.getTaxa().get(271));

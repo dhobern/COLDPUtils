@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -65,6 +66,13 @@ public class COLDPTool {
         public int getThreshold() {
             return threshold;
         }
+    }
+
+    /**
+     * Enumeration of modification strategies
+     */
+    private static enum ModificationStrategy {
+        CAUTIOUS, AGGRESSIVE;
     }
     
     /**
@@ -144,6 +152,8 @@ public class COLDPTool {
     private static IdentifierStyle identifierStyle = IdentifierStyle.None;
     private static int[] issueCounts = { 0, 0, 0 };
     private static boolean verbose = false;
+    private static boolean fixNameSameReferenceBasionym = false;
+    private static ModificationStrategy modificationStrategy = ModificationStrategy.CAUTIOUS;
     
     private static OutputFormat format = OutputFormat.HTML;
     private static String newCsvSuffix = "-NEW";
@@ -252,6 +262,30 @@ public class COLDPTool {
 
             if (identifierStyle == IdentifierStyle.Int) {
                 coldp.tidyIdentifiers();
+            }
+            
+            if (fixNameSameReferenceBasionym) {
+                for (COLDPName name : coldp.getNames().values()) {
+                    if (!name.getID().equals(name.getBasionymID())) {
+                        COLDPName basionym = name.getBasionym();
+                        if (    name.getReferenceID() != null 
+                             && basionym.getReferenceID() != null
+                             && name.getReferenceID().equals(basionym.getReferenceID())
+                             && Objects.equals(name.getPublishedInPage(), basionym.getPublishedInPage())) {
+                            COLDPNameReference nr = name.getRedundantNameReference(modificationStrategy == ModificationStrategy.CAUTIOUS);
+                            if (nr != null) {
+                                if (basionym.getRedundantNameReference(false) == null) {
+                                    nr.setName(basionym);
+                                } else {
+                                    coldp.deleteNameReference(nr);
+                                }
+                            }
+                            name.setReference(null);
+                            name.setPublishedInPage(null);
+                            name.setPublishedInYear(null);
+                        }
+                    }
+                }
             }
 
             coldp.write(outputFolderName, newCsvSuffix, overwrite);
@@ -510,7 +544,11 @@ public class COLDPTool {
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
                 .addOption("o", "output-folder", true, "Output folder name")
                 .addOption("l", "log-file", true, "Log file name")
-                .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
+                .addOption("L", "log-threshold", true, 
+                           "Log reporting level, one of ERROR, WARNING, INFO")
+                .addOption("M", "modification-strategy", true, 
+                           "Aggressiveness of efforts to modify data, one of "
+                                   + "CAUTIOUS (default), AGGRESSIVE")
                 .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose")
                 .addOption("S", "suffix", true, 
@@ -520,7 +558,11 @@ public class COLDPTool {
                                    + "files")
                 .addOption("I", "identifer-style", true, "Update style of "
                                    + "identifiers for references, names and "
-                                   + "taxa, one of Int");
+                                   + "taxa, one of Int")
+                .addOption("R", "fix-combination-reference", false, 
+                           "Remove reference details from combination name "
+                                   + "records where these are identical with the "
+                                   + "basionym reference details");
 
         CommandLineParser parser = new DefaultParser();
         
@@ -555,6 +597,22 @@ public class COLDPTool {
                             }
                         } catch(Exception e) {
                             reportError("Invalid log threshold : " + o.getValue());
+                        }
+                        break;
+                    case "M":
+                        try {
+                            modificationStrategy = ModificationStrategy.valueOf(o.getValue().toUpperCase());
+                            if (verbose) {
+                                reportInfo("Modification strategy: " + modificationStrategy.name());
+                            }
+                        } catch(Exception e) {
+                            reportError("Invalid modification strategy : " + o.getValue());
+                        }
+                        break;
+                    case "R":
+                        fixNameSameReferenceBasionym = true;
+                        if (verbose) {
+                            reportInfo("Fix names reusing basionym reference: Yes");
                         }
                         break;
                     case "x":

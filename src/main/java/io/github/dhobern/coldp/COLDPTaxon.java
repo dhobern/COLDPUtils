@@ -9,8 +9,10 @@ import io.github.dhobern.coldp.COLDPDistribution.RegionSort;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,7 +53,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     private COLDPTaxon parent;
     private COLDPName name;
     private COLDPReference reference;
-    private Set<COLDPSynonym> synonyms;
+    private List<COLDPSynonym> synonyms;
     private Set<COLDPDistribution> distributions;
 
     public COLDPTaxon() {
@@ -290,14 +292,14 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         this.remarks = remarks;
     }
 
-    public Set<COLDPSynonym> getSynonyms() {
+    public List<COLDPSynonym> getSynonyms() {
         return synonyms;
     }
 
     void registerSynonym(COLDPSynonym synonym) {
         if (synonym != null) {
             if (synonyms == null) {
-                synonyms = new HashSet<>();
+                synonyms = new ArrayList<>();
             }
             synonyms.add(synonym);
         }

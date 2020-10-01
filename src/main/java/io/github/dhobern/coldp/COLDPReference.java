@@ -7,8 +7,10 @@ package io.github.dhobern.coldp;
 
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -31,11 +33,11 @@ public class COLDPReference implements TreeRenderable {
     private String link;
     
     private Set<COLDPName> names;
-    private Set<COLDPNameReference> nameReferences;
-    private Set<COLDPNameRelation> nameRelations;
+    private List<COLDPNameReference> nameReferences;
+    private List<COLDPNameRelation> nameRelations;
     private Set<COLDPTaxon> taxa;
-    private Set<COLDPSynonym> synonyms;
-    private Set<COLDPDistribution> distributions;
+    private List<COLDPSynonym> synonyms;
+    private List<COLDPDistribution> distributions;
 
     public COLDPReference() {
     }
@@ -115,14 +117,14 @@ public class COLDPReference implements TreeRenderable {
         }
     }
  
-    public Set<COLDPNameReference> getNameReferences() {
+    public List<COLDPNameReference> getNameReferences() {
         return nameReferences;
     }
 
     void registerNameReference(COLDPNameReference nameReference) {
         if (nameReference != null) {
             if (nameReferences == null) {
-                nameReferences = new HashSet<>();
+                nameReferences = new ArrayList<>();
             }
             nameReferences.add(nameReference);
         }
@@ -134,14 +136,14 @@ public class COLDPReference implements TreeRenderable {
         }
     }
  
-    public Set<COLDPNameRelation> getNameRelations() {
+    public List<COLDPNameRelation> getNameRelations() {
         return nameRelations;
     }
 
     void registerNameRelation(COLDPNameRelation nameRelation) {
         if (nameRelation != null) {
             if (nameRelations == null) {
-                nameRelations = new HashSet<>();
+                nameRelations = new ArrayList<>();
             }
             nameRelations.add(nameRelation);
         }
@@ -172,14 +174,14 @@ public class COLDPReference implements TreeRenderable {
         }
     }
 
-    public Set<COLDPSynonym> getSynonyms() {
+    public List<COLDPSynonym> getSynonyms() {
         return synonyms;
     }
 
     void registerSynonym(COLDPSynonym synonym) {
         if (synonym != null) {
             if (synonyms == null) {
-                synonyms = new HashSet<>();
+                synonyms = new ArrayList<>();
             }
             synonyms.add(synonym);
         }
@@ -194,7 +196,7 @@ public class COLDPReference implements TreeRenderable {
     void registerDistribution(COLDPDistribution distribution) {
         if (distribution != null) {
             if (distributions == null) {
-                distributions = new HashSet<>();
+                distributions = new ArrayList<>();
             }
             distributions.add(distribution);
         }

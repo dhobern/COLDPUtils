@@ -90,6 +90,17 @@ public class COLDataPackage {
     public Map<String, COLDPRegion> getRegions() {
         return regions;
     }
+    
+    public boolean deleteNameReference(COLDPNameReference nr) {
+        if (nr != null) {
+            nr.setName(null);
+            nr.setReference(null);
+            nameReferences.remove(nr);
+            return true;
+        }
+        
+        return false;
+    }
 
     private COLDataPackage() {
     }
