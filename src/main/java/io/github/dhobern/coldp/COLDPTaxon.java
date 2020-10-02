@@ -28,12 +28,12 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPTaxon.class);
    
-    private Integer ID;
-    private Integer parentID;
-    private Integer nameID;
+    private String ID;
+    private String parentID;
+    private String nameID;
     private String scrutinizer;
     private String scrutinizerDate;
-    private Integer referenceID;
+    private String referenceID;
     private boolean extinct;
     private String temporalRangeEnd;
     private String lifezone;
@@ -59,19 +59,19 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     public COLDPTaxon() {
     }
 
-    public Integer getID() {
+    public String getID() {
         return ID;
     }
 
-    public void setID(Integer ID) {
+    public void setID(String ID) {
         this.ID = ID;
     }
 
-    public Integer getParentID() {
+    public String getParentID() {
         return parent == null ? parentID : parent.getID();
     }
 
-    public void setParentID(Integer parentID) {
+    public void setParentID(String parentID) {
         if (parent == null) {
             this.parentID = parentID;
         } else {
@@ -113,11 +113,11 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         }
     }
 
-    public Integer getNameID() {
+    public String getNameID() {
         return name == null ? nameID : name.getID();
     }
 
-    public void setNameID(Integer nameID) {
+    public void setNameID(String nameID) {
         if (name == null) {
             this.nameID = nameID;
         } else {
@@ -153,11 +153,11 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         this.scrutinizerDate = scrutinizerDate;
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -369,13 +369,13 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
     public static class AlphabeticalSort implements Comparator<COLDPTaxon> { 
         
-        private final Map<Integer, COLDPName> names;
+        private final Map<String, COLDPName> names;
         
         private AlphabeticalSort() {
             names = null;
         }
         
-        public AlphabeticalSort(Map<Integer, COLDPName> names) {
+        public AlphabeticalSort(Map<String, COLDPName> names) {
             this.names = names;
         }
 
@@ -409,9 +409,8 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
     
     public String toCsv() {
-        return buildCSV(safeString(ID), safeString(getParentID()),
-                        safeString(getNameID()), scrutinizer, 
-                        scrutinizerDate, safeString(getReferenceID()),
+        return buildCSV(ID, getParentID(), getNameID(), scrutinizer, 
+                        scrutinizerDate, getReferenceID(),
                         extinct ? "true" : "false", temporalRangeEnd,
                         lifezone, kingdom, phylum, clazz, order, superfamily,
                         family, subfamily, tribe, genus, species, remarks);

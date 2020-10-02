@@ -32,17 +32,17 @@ public class COLDPFormatterCSS {
     private static final Logger LOG = LoggerFactory.getLogger(COLDPFormatterCSS.class);
     
     private static Map<String,COLDPName> names;
-    private static Map<Integer,COLDPName> namesByID;
-    private static Map<Integer,COLDPReference> references;
-    private static Map<Integer,Set<COLDPNameReference>> nameReferencesByNameID;
-    private static Map<Integer,Set<COLDPSynonym>> synonymsByNameID;
-    private static Map<Integer,Set<COLDPSynonym>> synonymsByTaxonID;
-    private static Map<Integer,Set<COLDPNameRelation>> relationsByNameID;
-    private static Map<Integer,Set<COLDPNameRelation>> relationsByRelatedNameID;
-    private static Map<Integer,COLDPTaxon> taxa;
-    private static Map<Integer,COLDPTaxon> taxaByNameID;
-    private static Map<Integer,Set<COLDPTaxon>> childrenByParentID;
-    private static Map<Integer,Set<COLDPDistribution>> distributionsByTaxonID;
+    private static Map<String,COLDPName> namesByID;
+    private static Map<String,COLDPReference> references;
+    private static Map<String,Set<COLDPNameReference>> nameReferencesByNameID;
+    private static Map<String,Set<COLDPSynonym>> synonymsByNameID;
+    private static Map<String,Set<COLDPSynonym>> synonymsByTaxonID;
+    private static Map<String,Set<COLDPNameRelation>> relationsByNameID;
+    private static Map<String,Set<COLDPNameRelation>> relationsByRelatedNameID;
+    private static Map<String,COLDPTaxon> taxa;
+    private static Map<String,COLDPTaxon> taxaByNameID;
+    private static Map<String,Set<COLDPTaxon>> childrenByParentID;
+    private static Map<String,Set<COLDPDistribution>> distributionsByTaxonID;
     private static Map<String,COLDPRegion> regions;
 
     private static final String INDENT = "    ";
@@ -68,16 +68,16 @@ public class COLDPFormatterCSS {
             names = nameReader.getMap(COLDPName::getScientificName);
             
             nameReader = new CSVReader<>(fileNamePrefix + "name.csv", COLDPName.class, ",");
-            namesByID = nameReader.getIntegerMap(COLDPName::getID);
+            namesByID = nameReader.getMap(COLDPName::getID);
             
             CSVReader<COLDPTaxon> taxonReader 
                     = new CSVReader<>(fileNamePrefix + "taxon.csv",
                             COLDPTaxon.class, ",");
-            taxa = taxonReader.getIntegerMap(COLDPTaxon::getID);
+            taxa = taxonReader.getMap(COLDPTaxon::getID);
 
             taxonReader 
                     = new CSVReader<>(fileNamePrefix + "taxon.csv", COLDPTaxon.class, ",");
-            taxaByNameID = taxonReader.getIntegerMap(COLDPTaxon::getNameID);
+            taxaByNameID = taxonReader.getMap(COLDPTaxon::getNameID);
             
             Comparator<COLDPTaxon> alphabeticalSort = new AlphabeticalSort(namesByID);
             childrenByParentID = new HashMap<>();
@@ -94,26 +94,26 @@ public class COLDPFormatterCSS {
 
             CSVReader<COLDPReference> referenceReader 
                     = new CSVReader<>(fileNamePrefix + "reference.csv", COLDPReference.class, ",");
-            references = referenceReader.getIntegerMap(COLDPReference::getID);
+            references = referenceReader.getMap(COLDPReference::getID);
 
             CSVReader<COLDPNameReference> nameReferenceReader 
                     = new CSVReader<>(fileNamePrefix + "namereference.csv", COLDPNameReference.class, ",");
-            nameReferencesByNameID = nameReferenceReader.getIntegerKeyedSets(COLDPNameReference::getNameID);
+            nameReferencesByNameID = nameReferenceReader.getKeyedSets(COLDPNameReference::getNameID);
 
             CSVReader<COLDPSynonym> synonymReader 
                     = new CSVReader<>(fileNamePrefix + "synonym.csv", COLDPSynonym.class, ",");
-            synonymsByNameID = synonymReader.getIntegerKeyedSets(COLDPSynonym::getNameID);
+            synonymsByNameID = synonymReader.getKeyedSets(COLDPSynonym::getNameID);
  
             synonymReader = new CSVReader<>(fileNamePrefix + "synonym.csv", COLDPSynonym.class, ",");
-            synonymsByTaxonID = synonymReader.getIntegerKeyedSets(COLDPSynonym::getTaxonID);
+            synonymsByTaxonID = synonymReader.getKeyedSets(COLDPSynonym::getTaxonID);
  
             CSVReader<COLDPNameRelation> nameRelationReader 
                     = new CSVReader<>(fileNamePrefix + "namerelation.csv", COLDPNameRelation.class, ",");
-            relationsByNameID = nameRelationReader.getIntegerKeyedSets(COLDPNameRelation::getNameID);
+            relationsByNameID = nameRelationReader.getKeyedSets(COLDPNameRelation::getNameID);
  
             nameRelationReader 
                     = new CSVReader<>(fileNamePrefix + "nameRelation.csv", COLDPNameRelation.class, ",");
-            relationsByRelatedNameID = nameRelationReader.getIntegerKeyedSets(COLDPNameRelation::getRelatedNameID);
+            relationsByRelatedNameID = nameRelationReader.getKeyedSets(COLDPNameRelation::getRelatedNameID);
  
             if (new File(fileNamePrefix + "region.csv").exists()) {
                 CSVReader<COLDPRegion> regionReader 
@@ -126,7 +126,7 @@ public class COLDPFormatterCSS {
             if (new File(fileNamePrefix + "distribution.csv").exists()) {
                 CSVReader<COLDPDistribution> distributionReader 
                     = new CSVReader<>(fileNamePrefix + "distribution.csv", COLDPDistribution.class, ",");
-                distributionsByTaxonID = distributionReader.getIntegerKeyedSets(COLDPDistribution::getTaxonID);
+                distributionsByTaxonID = distributionReader.getKeyedSets(COLDPDistribution::getTaxonID);
             } else {
                 distributionsByTaxonID = new HashMap<>();
             }

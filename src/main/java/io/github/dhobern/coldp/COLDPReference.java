@@ -24,7 +24,7 @@ public class COLDPReference implements TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPReference.class);
     
-    private Integer ID;
+    private String ID;
     private String author;
     private String title;
     private String year;
@@ -42,11 +42,11 @@ public class COLDPReference implements TreeRenderable {
     public COLDPReference() {
     }
 
-    public Integer getID() {
+    public String getID() {
         return ID;
     }
 
-    public void setID(Integer ID) {
+    public void setID(String ID) {
         this.ID = ID;
     }
 
@@ -254,7 +254,7 @@ public class COLDPReference implements TreeRenderable {
     }
     
     public String toCsv() {
-        return buildCSV(safeString(ID),author,title,year,source,details,link);
+        return buildCSV(ID, author, title, year, source, details, link);
     }
 
     @Override

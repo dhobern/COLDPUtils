@@ -48,7 +48,7 @@ public class COLDataPackageTest {
 
     @Test
     public void testNameToReference() {
-        COLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
+        COLDPName name = coldp.getNames().get("271"); // Ochyrotica fasciata
         COLDPReference reference = name.getReference(); // New genera of Agdistidae and Pterophoridae
         
         assertEquals(reference.getTitle(), "New genera of Agdistidae and Pterophoridae");
@@ -56,14 +56,14 @@ public class COLDataPackageTest {
 
     @Test
     public void testNameRender() {
-        COLDPName name = coldp.getNames().get(271); // Ochyrotica fasciata
+        COLDPName name = coldp.getNames().get("271"); // Ochyrotica fasciata
         
         name.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "--> ", 3));
     }
     
     @Test
     public void testTaxonRender() {
-        COLDPTaxon taxon = coldp.getTaxa().get(268); // Ochyroticinae
+        COLDPTaxon taxon = coldp.getTaxa().get("268"); // Ochyroticinae
         
         taxon.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None));
     }
@@ -72,12 +72,12 @@ public class COLDataPackageTest {
     public void testDeleteNameReference() {
         int count = coldp.getNameReferences().size();
         
-        COLDPName name = coldp.getNames().get(3060); // Agdistopis
+        COLDPName name = coldp.getNames().get("3060"); // Agdistopis
         assertEquals(1, name.getNameReferences().size());
         
         COLDPNameReference nr = name.getNameReferences().iterator().next();
         COLDPReference reference = nr.getReference();
-        assertEquals(813, reference.getID().longValue());
+        assertEquals("813", reference.getID());
         assertEquals(2, reference.getNameReferences().size());
         
         assertTrue(coldp.deleteNameReference(nr));
@@ -90,9 +90,9 @@ public class COLDataPackageTest {
     @Test
     public void testRegionToTaxa() {
         List<COLDPTaxon> expected = new ArrayList<>(); 
-        expected.add(coldp.getTaxa().get(271));
-        expected.add(coldp.getTaxa().get(275));
-        expected.add(coldp.getTaxa().get(277));
+        expected.add(coldp.getTaxa().get("271"));
+        expected.add(coldp.getTaxa().get("275"));
+        expected.add(coldp.getTaxa().get("277"));
 
         COLDPRegion region = coldp.getRegions().get("PA"); // Paraguay
         Set<COLDPDistribution> distributions = region.getDistributions();
@@ -127,17 +127,17 @@ public class COLDataPackageTest {
         
         int i = 1;
         for (COLDPName name : coldp.getNames().values()) {
-            name.setID(i++);
+            name.setID(String.valueOf(i++));
         }
         
         i = 1;
         for (COLDPReference reference : coldp.getReferences().values()) {
-            reference.setID(i++);
+            reference.setID(String.valueOf(i++));
         }
         
         i = 1;
         for (COLDPTaxon taxon : coldp.getTaxa().values()) {
-            taxon.setID(i++);
+            taxon.setID(String.valueOf(i++));
         }
         
         coldp.write("mockdata", "-NEW");

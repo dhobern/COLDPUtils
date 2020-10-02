@@ -19,10 +19,10 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPNameRelation.class);
       
-    private Integer nameID;
-    private Integer relatedNameID;
+    private String nameID;
+    private String relatedNameID;
     private String type;
-    private Integer referenceID;
+    private String referenceID;
     private String remarks;
     
     private COLDPName name;
@@ -32,11 +32,11 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     public COLDPNameRelation() {
     }
 
-    public Integer getNameID() {
+    public String getNameID() {
         return name == null ? nameID : name.getID();
     }
 
-    public void setNameID(Integer nameID) {
+    public void setNameID(String nameID) {
         if (name == null) {
             this.nameID = nameID;
         } else {
@@ -59,11 +59,11 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
         }
     }
 
-    public Integer getRelatedNameID() {
+    public String getRelatedNameID() {
         return relatedName == null ? relatedNameID :  relatedName.getID();
     }
 
-    public void setRelatedNameID(Integer relatedNameID) {
+    public void setRelatedNameID(String relatedNameID) {
         if (relatedName == null) {
             this.relatedNameID = relatedNameID;
         } else {
@@ -94,11 +94,11 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
         this.type = type;
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -185,11 +185,8 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     }
     
     public String toCsv() {
-        return buildCSV(safeString(getNameID()),
-                        safeString(getRelatedNameID()),
-                        type,
-                        safeString(getReferenceID()),
-                        remarks);
+        return buildCSV(getNameID(), getRelatedNameID(), type,
+                        getReferenceID(), remarks);
     }
 
     @Override

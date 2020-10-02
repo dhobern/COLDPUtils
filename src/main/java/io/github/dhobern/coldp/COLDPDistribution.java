@@ -21,11 +21,11 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPDistribution.class);
      
-    private Integer taxonID;
+    private String taxonID;
     private String area;
     private String gazetteer;
     private String status;
-    private Integer referenceID;
+    private String referenceID;
     private String remarks;
     
     private COLDPTaxon taxon;
@@ -35,11 +35,11 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     public COLDPDistribution() {
     }
 
-    public Integer getTaxonID() {
+    public String getTaxonID() {
         return taxon == null ? taxonID : taxon.getID();
     }
 
-    public void setTaxonID(Integer taxonID) {
+    public void setTaxonID(String taxonID) {
         if (taxon == null) {
             this.taxonID = taxonID;
         } else {
@@ -105,11 +105,11 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
         this.status = status;
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -196,8 +196,8 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
     
     public String toCsv() {
-        return buildCSV(safeString(getTaxonID()), getArea(), gazetteer, status,
-                        safeString(getReferenceID()), remarks);
+        return buildCSV(getTaxonID(), getArea(), gazetteer, status,
+                        getReferenceID(), remarks);
     }
 
     @Override

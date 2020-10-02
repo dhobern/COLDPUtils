@@ -25,8 +25,8 @@ public class COLDPName implements TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPName.class);
 
-    private Integer ID;
-    private Integer basionymID;
+    private String ID;
+    private String basionymID;
     private String scientificName;
     private String authorship;
     private String rank;
@@ -34,7 +34,7 @@ public class COLDPName implements TreeRenderable {
     private String genus;
     private String specificEpithet;
     private String infraspecificEpithet;
-    private Integer referenceID;
+    private String referenceID;
     private String publishedInPage;
     private String publishedInYear;
     private String code;
@@ -54,19 +54,19 @@ public class COLDPName implements TreeRenderable {
     public COLDPName() {
     }
 
-    public Integer getID() {
+    public String getID() {
         return ID;
     }
 
-    public void setID(Integer ID) {
+    public void setID(String ID) {
         this.ID = ID;
     }
 
-    public Integer getBasionymID() {
+    public String getBasionymID() {
         return (basionym == null) ? basionymID : basionym.getID();
     }
 
-    public void setBasionymID(Integer basionymID) {
+    public void setBasionymID(String basionymID) {
         if (basionym == null) {
             this.basionymID = basionymID;
         } else {
@@ -165,11 +165,11 @@ public class COLDPName implements TreeRenderable {
         this.infraspecificEpithet = infraspecificEpithet;
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -391,10 +391,10 @@ public class COLDPName implements TreeRenderable {
     }
     
     public String toCSV() {
-        return buildCSV(safeString(ID), safeString(getBasionymID()),
+        return buildCSV(ID, getBasionymID(),
                         scientificName, authorship, rank, uninomial, genus,
                         specificEpithet, infraspecificEpithet,
-                        safeString(getReferenceID()), publishedInPage,
+                        getReferenceID(), publishedInPage,
                         publishedInYear, code, status, remarks, link);
     }
 

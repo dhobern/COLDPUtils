@@ -20,8 +20,8 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPNameReference.class);
      
-    private Integer nameID;
-    private Integer referenceID;
+    private String nameID;
+    private String referenceID;
     private String page;
     private String link;
     private String remarks;
@@ -32,11 +32,11 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     public COLDPNameReference() {
     }
 
-    public Integer getNameID() {
+    public String getNameID() {
         return name == null ? nameID : name.getID();
     }
 
-    public void setNameID(Integer nameID) {
+    public void setNameID(String nameID) {
         if (name == null) {
             this.nameID = nameID;
         } else {
@@ -59,11 +59,11 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
         }
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -166,9 +166,8 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     }
     
     public String toCsv() {
-        return StringUtils.buildCSV(StringUtils.safeString(getNameID()),
-                                 StringUtils.safeString(getReferenceID()),
-                                 page,link,remarks);
+        return StringUtils.buildCSV(getNameID(), getReferenceID(),
+                                    page, link, remarks);
     }
 
     @Override

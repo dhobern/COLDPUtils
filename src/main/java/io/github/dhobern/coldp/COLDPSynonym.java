@@ -20,10 +20,10 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPSynonym.class);
   
-    private Integer taxonID;
-    private Integer nameID; 
+    private String taxonID;
+    private String nameID; 
     private String status;
-    private Integer referenceID; 
+    private String referenceID; 
     private String remarks;
     
     private COLDPTaxon taxon;
@@ -33,11 +33,11 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     public COLDPSynonym() {
     }
 
-    public Integer getTaxonID() {
+    public String getTaxonID() {
         return taxon == null ? taxonID : taxon.getID();
     }
 
-    public void setTaxonID(Integer taxonID) {
+    public void setTaxonID(String taxonID) {
         if (taxon == null) {
             this.taxonID = taxonID;
         } else {
@@ -60,11 +60,11 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
         }
     }
 
-    public Integer getNameID() {
+    public String getNameID() {
         return name == null ? nameID : name.getID();
     }
 
-    public void setNameID(Integer nameID) {
+    public void setNameID(String nameID) {
         if (name == null) {
             this.nameID = nameID;
         } else {
@@ -95,11 +95,11 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
         this.status = status;
     }
 
-    public Integer getReferenceID() {
+    public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
 
-    public void setReferenceID(Integer referenceID) {
+    public void setReferenceID(String referenceID) {
         if (reference == null) {
             this.referenceID = referenceID;
         } else {
@@ -188,11 +188,8 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     }
     
     public String toCsv() {
-        return buildCSV(safeString(getTaxonID()),
-                        safeString(getNameID()),
-                        status,
-                        safeString(getReferenceID()),
-                        remarks);
+        return buildCSV(getTaxonID(), getNameID(), status,
+                        getReferenceID(), remarks);
     }
 
     @Override

@@ -31,20 +31,20 @@ public class COLDataPackage {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDataPackage.class);
     
-    private Map<Integer,COLDPName> names;
-    private Map<Integer,COLDPReference> references;
+    private Map<String,COLDPName> names;
+    private Map<String,COLDPReference> references;
     private List<COLDPNameReference> nameReferences;
     private List<COLDPSynonym> synonyms;
     private List<COLDPNameRelation> nameRelations;
-    private Map<Integer,COLDPTaxon> taxa;
+    private Map<String,COLDPTaxon> taxa;
     private List<COLDPDistribution> distributions;
     private Map<String,COLDPRegion> regions;
     
-    public Map<Integer, COLDPName> getNames() {
+    public Map<String, COLDPName> getNames() {
         return names;
     }
 
-    public Map<Integer, COLDPReference> getReferences() {
+    public Map<String, COLDPReference> getReferences() {
         return references;
     }
 
@@ -60,7 +60,7 @@ public class COLDataPackage {
         return nameRelations;
     }
 
-    public Map<Integer, COLDPTaxon> getTaxa() {
+    public Map<String, COLDPTaxon> getTaxa() {
         return taxa;
     }
 
@@ -113,11 +113,11 @@ public class COLDataPackage {
         try {
             CSVReader<COLDPReference> referenceReader 
                     = new CSVReader<>(folderName + "reference.csv", COLDPReference.class, ",");
-            references = referenceReader.getIntegerMap(COLDPReference::getID);
+            references = referenceReader.getMap(COLDPReference::getID);
 
             CSVReader<COLDPName> nameReader
                     = new CSVReader<>(folderName + "name.csv", COLDPName.class, ",");
-            names = nameReader.getIntegerMap(COLDPName::getID);
+            names = nameReader.getMap(COLDPName::getID);
             
             CSVReader<COLDPNameReference> nameReferenceReader 
                     = new CSVReader<>(folderName + "namereference.csv", COLDPNameReference.class, ",");
@@ -129,7 +129,7 @@ public class COLDataPackage {
  
             CSVReader<COLDPTaxon> taxonReader 
                     = new CSVReader<>(folderName + "taxon.csv", COLDPTaxon.class, ",");
-            taxa = taxonReader.getIntegerMap(COLDPTaxon::getID);
+            taxa = taxonReader.getMap(COLDPTaxon::getID);
 
             CSVReader<COLDPSynonym> synonymReader = new CSVReader<>(folderName + "synonym.csv", COLDPSynonym.class, ",");
             synonyms = synonymReader.getList();
@@ -262,7 +262,7 @@ public class COLDataPackage {
         references = new HashMap<>();
         int id = 1;
         for (COLDPReference reference : sortedReferences) {
-            reference.setID(id++);
+            reference.setID(String.valueOf(id++));
             references.put(reference.getID(), reference);
         }
 
@@ -276,11 +276,11 @@ public class COLDataPackage {
             id = tidyNameAndTaxonIdentifiers(root, id, sortedTaxa, sortedNames);
         }
         for (COLDPTaxon taxon : taxa.values()) {
-            taxon.setID(++id);
+            taxon.setID(String.valueOf(++id));
             sortedTaxa.add(taxon);
         }
         for (COLDPName name : names.values()) {
-            name.setID(++id);
+            name.setID(String.valueOf(++id));
             sortedNames.add(name);
         }
         
@@ -301,8 +301,8 @@ public class COLDataPackage {
         taxa.remove(taxon.getID());
         names.remove(name.getID());
         
-        taxon.setID(id);
-        name.setID(id++);
+        taxon.setID(String.valueOf(id));
+        name.setID(String.valueOf(id++));
 
         sortedTaxa.add(taxon);
         sortedNames.add(name);
@@ -311,7 +311,7 @@ public class COLDataPackage {
             for (COLDPSynonym synonym : taxon.getSynonyms()) {
                 COLDPName sname = synonym.getName();
                 names.remove(sname.getID());
-                sname.setID(id++);
+                sname.setID(String.valueOf(id++));
                 sortedNames.add(sname);
             }
         }
