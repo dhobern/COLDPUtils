@@ -1,5 +1,5 @@
 ID,parentID,nameID,scrutinizer,scrutinizerDate,referenceID,extinct,temporalRangeEnd,lifezone,kingdom,phylum,class,order,superfamily,family,subfamily,tribe,genus,species,remarks
-3836,4,3836,"Gielis, C. & Hobern, D.",2020-07-16,,FALSE,Holocene,,Animalia,Arthropoda,Insecta,Lepidoptera,Pterophoroidea,,,,,,
+3836,,3836,"Gielis, C. & Hobern, D.",2020-07-16,,FALSE,Holocene,,Animalia,Arthropoda,Insecta,Lepidoptera,Pterophoroidea,,,,,,
 5,3836,5,"Gielis, C. & Hobern, D.",2020-07-16,,FALSE,Holocene,terrestrial,Animalia,Arthropoda,Insecta,Lepidoptera,Pterophoroidea,Pterophoridae,,,,,
 7,5,7,"Gielis, C. & Hobern, D.",2020-07-16,,FALSE,Holocene,terrestrial,Animalia,Arthropoda,Insecta,Lepidoptera,Pterophoroidea,Pterophoridae,Ochyroticinae,,,,
 268,7,268,"Gielis, C. & Hobern, D.",2020-07-16,,FALSE,Holocene,terrestrial,Animalia,Arthropoda,Insecta,Lepidoptera,Pterophoroidea,Pterophoridae,Ochyroticinae,,Ochyrotica,,
