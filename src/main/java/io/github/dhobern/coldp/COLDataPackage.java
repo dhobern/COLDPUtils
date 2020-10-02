@@ -7,6 +7,7 @@ package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.COLDPReference.BibliographicSort;
 import io.github.dhobern.coldp.COLDPTaxon.AlphabeticalSortByScientificName;
+import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import io.github.dhobern.utils.CSVReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,6 +40,62 @@ public class COLDataPackage {
     private Map<String,COLDPTaxon> taxa;
     private List<COLDPDistribution> distributions;
     private Map<String,COLDPRegion> regions;
+    
+    private IdentifierPolicy taxonIdentifierPolicy;
+    private IdentifierPolicy nameIdentifierPolicy;
+    private IdentifierPolicy referenceIdentifierPolicy;
+    
+    public COLDPTaxon newTaxon() {
+        COLDPTaxon taxon = new COLDPTaxon();
+        taxon.setID(taxonIdentifierPolicy.nextIdentifier());
+        taxa.put(taxon.getID(), taxon);
+        return taxon;
+    }
+    
+    public COLDPName newName() {
+        COLDPName name = new COLDPName();
+        name.setID(nameIdentifierPolicy.nextIdentifier());
+        names.put(name.getID(), name);
+        return name;
+    }
+
+    public COLDPReference newReference() {
+        COLDPReference reference = new COLDPReference();
+        reference.setID(referenceIdentifierPolicy.nextIdentifier());
+        references.put(reference.getID(), reference);
+        return reference;
+    }
+
+    public COLDPNameReference newNameReference() {
+        COLDPNameReference nameReference = new COLDPNameReference();
+        nameReferences.add(nameReference);
+        return nameReference;
+    }
+    
+    public COLDPNameRelation newNameRelation() {
+        COLDPNameRelation nameRelation = new COLDPNameRelation();
+        nameRelations.add(nameRelation);
+        return nameRelation;
+    }
+    
+    public COLDPSynonym newSynonym() {
+        COLDPSynonym synonym = new COLDPSynonym();
+        synonyms.add(synonym);
+        return synonym;
+    }
+    
+    public COLDPDistribution newDistribution() {
+        COLDPDistribution distribution = new COLDPDistribution();
+        distributions.add(distribution);
+        return distribution;
+    }
+    
+    public COLDPRegion newRegion(String ID) {
+        COLDPRegion region = new COLDPRegion();
+        region.setID(ID);
+        regions.put(ID, region);
+        return region;
+    }
     
     public Map<String, COLDPName> getNames() {
         return names;
@@ -106,10 +163,18 @@ public class COLDataPackage {
     }
     
     public COLDataPackage(String folderName) {
+        this(folderName, null);
+    }
+
+    public COLDataPackage(String folderName, IdentifierType identifierType) {
         if (!folderName.endsWith("/")) {
             folderName += "/";
         }
             
+        taxonIdentifierPolicy = new IdentifierPolicy(identifierType);
+        nameIdentifierPolicy = new IdentifierPolicy(identifierType);
+        referenceIdentifierPolicy = new IdentifierPolicy(identifierType);
+
         try {
             CSVReader<COLDPReference> referenceReader 
                     = new CSVReader<>(folderName + "reference.csv", COLDPReference.class, ",");
@@ -149,8 +214,13 @@ public class COLDataPackage {
             } else {
                 distributions = new ArrayList<>();
             }
+            
+            for (COLDPReference reference : references.values()) {
+                referenceIdentifierPolicy.processInstance(reference.getID());
+            }
  
             for(COLDPName name : names.values()) {
+                nameIdentifierPolicy.processInstance(name.getID());
                 if (name.getBasionymID() != null) {
                     COLDPName basionym = names.get(name.getBasionymID());
                     if (basionym == null) {
@@ -188,6 +258,7 @@ public class COLDataPackage {
             }
             
             for(COLDPTaxon taxon : taxa.values()) {
+                taxonIdentifierPolicy.processInstance(taxon.getID());
                 // Scientific name is used in sorting taxa so set this first
                 taxon.setName(names.get(taxon.getNameID()));
                 if (taxon.getParentID() != null) {
@@ -248,7 +319,6 @@ public class COLDataPackage {
                     }
                 }
             }
-
         } catch (UnsupportedEncodingException | FileNotFoundException ex) {
             java.util.logging.Logger.getLogger(COLDataPackage.class.getName()).log(Level.SEVERE, null, ex);
         }

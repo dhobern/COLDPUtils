@@ -16,6 +16,7 @@
 
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import static io.github.dhobern.utils.StringUtils.buildCSV;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
@@ -129,13 +130,6 @@ public class COLDPTool {
         }
     }
 
-    /**
-     * Enumeration of identifier styles
-     */
-    private static enum IdentifierStyle {
-        None, Int;
-    }
-    
     private static final Logger LOG = LoggerFactory.getLogger(COLDPTool.class);
     
     private static String templateEyecatcherText = "COLDPTool.Output";
@@ -149,7 +143,8 @@ public class COLDPTool {
     private static PrintWriter logWriter;
     private static BufferedReader templateReader;
     private static int indentCount = 0;
-    private static IdentifierStyle identifierStyle = IdentifierStyle.None;
+    private static IdentifierType currentIdentifierType = null;
+    private static IdentifierType newIdentifierType = null;
     private static int[] issueCounts = { 0, 0, 0 };
     private static boolean verbose = false;
     private static boolean fixNameSameReferenceBasionym = false;
@@ -260,7 +255,7 @@ public class COLDPTool {
 
             COLDataPackage coldp = new COLDataPackage(coldpFolderName);
 
-            if (identifierStyle == IdentifierStyle.Int) {
+            if (newIdentifierType == IdentifierType.Int) {
                 coldp.tidyIdentifiers();
             }
             
@@ -399,7 +394,12 @@ public class COLDPTool {
                 .addOption("o", "output-file", true, "Output file name (defaults to stdout)")
                 .addOption("l", "log-file", true, "Log file name")
                 .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
-                .addOption("i", "initial-indent", true, "Initial indent level (two spaces per level)")
+                .addOption("w", "whitespace-level", true, "Initial indent level (two spaces per level)")
+                .addOption("i", "identifier-type", true, 
+                           "Current identifier type for Taxon, Name and "
+                                   + "Reference records - one of Int, UUID and "
+                                   + "String - defaults to match existing "
+                                   + "records")
                 .addOption("h", "help", false, "Show help")
                 .addOption("v", "verbose", false, "Verbose")
                 .addOption("T", "template", true, 
@@ -430,6 +430,20 @@ public class COLDPTool {
                         selectedTaxonName = o.getValue();
                         if (verbose) {
                             reportInfo("Selected taxon name: " + selectedTaxonName);
+                        }
+                        break;
+                    case "i":
+                        try {
+                            currentIdentifierType = IdentifierType.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            currentIdentifierType = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised current identifier type for option -I: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Selected current identifier type: " + currentIdentifierType.name());
                         }
                         break;
                     case "f":
@@ -471,7 +485,7 @@ public class COLDPTool {
                             reportError("Invalid log threshold : " + o.getValue());
                         }
                         break;
-                    case "i":
+                    case "w":
                         indentCount = Integer.parseInt(o.getValue());
                         if (verbose) {
                             reportInfo("Initial indent level: " + indentCount);
@@ -556,9 +570,14 @@ public class COLDPTool {
                                    + "defaults to \"-NEW\" - replace with "
                                    + "care to avoid overwriting source CSV "
                                    + "files")
-                .addOption("I", "identifer-style", true, "Update style of "
+                .addOption("i", "identifier-type", true, 
+                           "Current identifier type for Taxon, Name and "
+                                   + "Reference records - one of Int, UUID and "
+                                   + "String - defaults to match existing "
+                                   + "records")
+                .addOption("I", "new-identifer-type", true, "Update type of "
                                    + "identifiers for references, names and "
-                                   + "taxa, one of Int")
+                                   + "taxa, one of Int, UUID and String")
                 .addOption("R", "fix-combination-reference", false, 
                            "Remove reference details from combination name "
                                    + "records where these are identical with the "
@@ -623,16 +642,30 @@ public class COLDPTool {
                         break;
                     case "I":
                         try {
-                            identifierStyle = IdentifierStyle.valueOf(o.getValue());
+                            newIdentifierType = IdentifierType.valueOf(o.getValue());
                         } catch(Exception e) {
                             // Swallow exception - error reporting will occur automatically
-                            identifierStyle = null;
+                            newIdentifierType = null;
                         }
                         if (format == null) {
-                            reportError("Unrecognised identifierStyle for option -I: " + o.getValue());
+                            reportError("Unrecognised new identifier type for option -I: " + o.getValue());
                             command = null;
                         } else if (verbose) {
-                            reportInfo("Selected identifier style: " + identifierStyle.name());
+                            reportInfo("Selected new identifier type: " + newIdentifierType.name());
+                        }
+                        break;
+                    case "i":
+                        try {
+                            currentIdentifierType = IdentifierType.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            currentIdentifierType = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised current identifier type for option -I: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Selected current identifier type: " + currentIdentifierType.name());
                         }
                         break;
                     case "S":
@@ -685,6 +718,11 @@ public class COLDPTool {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
+                .addOption("i", "identifier-type", true, 
+                           "Current identifier type for Taxon, Name and "
+                                   + "Reference records - one of Int, UUID and "
+                                   + "String - defaults to match existing "
+                                   + "records")
                 .addOption("l", "log-file", true, "Log file name (defaults to stdout)")
                 .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
                 .addOption("h", "help", false, "Show help")
@@ -703,6 +741,20 @@ public class COLDPTool {
             
             for (Option o : command.getOptions()) {
                 switch (o.getOpt()) {
+                    case "i":
+                        try {
+                            currentIdentifierType = IdentifierType.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            currentIdentifierType = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised current identifier type for option -I: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Selected current identifier type: " + currentIdentifierType.name());
+                        }
+                        break;
                     case "l":
                         logFileName = o.getValue();
                         if (verbose) {

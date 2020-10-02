@@ -104,7 +104,7 @@ public class COLDataPackageTest {
     
     
     @Test
-    public void testSomeMethod() {
+    public void testCOLDP() {
         for (COLDPName name: coldp.getNames().values()) {
             System.out.println(name.getID() + ", " + name.getScientificName() + ": " 
                     + "B: " + (name.getBasionym() == null ? 0 : name.getBasionym().getID())  + " / " 
@@ -144,4 +144,22 @@ public class COLDataPackageTest {
         
     }
     
+    @Test
+    public void testNewRecords() {
+        COLDPName name = coldp.getNames().get("271"); // Ochyrotica fasciata
+        COLDPReference reference = name.getReference(); // New genera of Agdistidae and Pterophoridae
+
+        for (int i = 0; i < 5; i++) {
+            COLDPNameReference nr = coldp.newNameReference();
+            nr.setName(name);
+            nr.setReference(reference);
+            nr.setPage(String.valueOf(i));
+            nr.setRemarks("Whatever is on page " + i);
+        }
+        
+        assertEquals(5, name.getNameReferences().size());
+        assertEquals(5, reference.getNameReferences().size());
+
+        name.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "  ", 0));
+    }
 }
