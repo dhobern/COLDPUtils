@@ -161,5 +161,9 @@ public class COLDataPackageTest {
         assertEquals(5, reference.getNameReferences().size());
 
         name.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "  ", 0));
+        
+        COLDPTaxon Ochyrotica = name.getTaxon().getParent();
+        COLDPTaxon falsa = coldp.newTaxon();
+        falsa.setParent(Ochyrotica);
     }
 }

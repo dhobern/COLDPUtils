@@ -11,6 +11,7 @@ import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,13 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public void setParent(COLDPTaxon parent) {
+        if (name != null 
+                && parent != null 
+                && parent.getName() != null
+                && name.getRankEnum().ordinal() <= parent.getName().getRankEnum().ordinal()) {
+            LOG.error("Cannot only set higher-ranked taxon as parent");
+        }
+
         if (this.parent != null) {
             this.parent.deregisterChild(this);
         }
@@ -91,17 +99,105 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         parentID = null;
         if (parent != null) {
             parent.registerChild(this);
+       }
+    }
+    
+    public void fixHierarchy() {
+        fixHierarchy(false);
+    }
+        
+    public void fixHierarchy(boolean fixName) {
+
+        // At this point, we expect the parent to be of a higher rank than
+        // this taxon
+        
+        if (name != null && parent != null && parent.getName() != null) {
+            RankEnum rank = name.getRankEnum();
+            RankEnum parentRank = parent.getName().getRankEnum();
+            
+            if (rank.ordinal() > RankEnum.unknown.ordinal()
+                && parentRank.ordinal() > RankEnum.unknown.ordinal()) {
+
+                if (rank.ordinal() > RankEnum.kingdom.ordinal()) {
+                    setKingdom(parentRank == RankEnum.kingdom 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getKingdom());
+                }
+                if (rank.ordinal() > RankEnum.phylum.ordinal()) {
+                    setPhylum(parentRank == RankEnum.phylum 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getPhylum());
+                }
+                if (rank.ordinal() > RankEnum.clazz.ordinal()) {
+                    setClazz(parentRank == RankEnum.clazz 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getClazz());
+                }
+                if (rank.ordinal() > RankEnum.order.ordinal()) {
+                    setOrder(parentRank == RankEnum.order 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getOrder());
+                }
+                if (rank.ordinal() > RankEnum.superfamily.ordinal()) {
+                    setSuperfamily(parentRank == RankEnum.superfamily 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getSuperfamily());
+                }
+                if (rank.ordinal() > RankEnum.family.ordinal()) {
+                    setFamily(parentRank == RankEnum.family 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getFamily());
+                }
+                if (rank.ordinal() > RankEnum.subfamily.ordinal()) {
+                    setSubfamily(parentRank == RankEnum.subfamily 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getSubfamily());
+                }
+                if (rank.ordinal() > RankEnum.tribe.ordinal()) {
+                    setTribe(parentRank == RankEnum.tribe 
+                                    ? parent.getName().getScientificName()
+                                    : parent.getTribe());
+                }
+                if (rank.ordinal() > RankEnum.genus.ordinal()) {
+                    setGenus(parentRank == RankEnum.genus 
+                                    ? parent.getName().getUninomial()
+                                    : parent.getGenus());
+                    if (genus == null || genus.length() == 0) {
+                        LOG.error("Parent of species-rank genus set to suprageneric " + parent.toString());
+                        setGenus("<Unknown genus>");
+                    }
+                }
+                if (rank.ordinal() > RankEnum.species.ordinal()) {
+                    setSpecies(parentRank == RankEnum.species 
+                                    ? parent.getName().getSpecificEpithet()
+                                    : parent.getSpecies());
+                    if (species == null || species.length() == 0) {
+                        LOG.error("Parent of infraspecific taxon set to supraspecific " + parent.toString());
+                        setSpecies("<Unknown species>");
+                    }
+                }
+            }
+            
+            if (fixName && rank.ordinal() >= RankEnum.species.ordinal()) {
+                name.fixGenus(getGenus());
+            }
         }
     }
 
     public Set<COLDPTaxon> getChildren() {
         return children;
     }
+    
+    public Set<COLDPTaxon> getChildrenSorted() {
+        TreeSet<COLDPTaxon> sorted = new TreeSet<>(new AlphabeticalSortByScientificName());
+        sorted.addAll(children);
+        return sorted;
+    }
 
     void registerChild(COLDPTaxon child) {
         if (child != null) {
             if (children == null) {
-                children = new TreeSet<>(new AlphabeticalSortByScientificName());
+                children = new TreeSet<>();
             }
             children.add(child);
         }
@@ -457,7 +553,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
             }
 
             if (recursive && children != null) {
-                for (COLDPTaxon taxon : children) {
+                for (COLDPTaxon taxon : getChildrenSorted()) {
                     taxon.render(writer, new TreeRenderProperties(context, this, ContextType.Taxon, true));
                 }
             }
@@ -507,4 +603,11 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
             writer.println(context.getIndent() + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(remarks))));
         }
     }    
+
+    @Override
+    public String toString() {
+        return "COLDPTaxon{" + "ID=" + ID + ", parentID=" + parentID + ", nameID=" + nameID + ", referenceID=" + referenceID + ", kingdom=" + kingdom + ", phylum=" + phylum + ", clazz=" + clazz + ", order=" + order + ", superfamily=" + superfamily + ", family=" + family + ", subfamily=" + subfamily + ", tribe=" + tribe + ", genus=" + genus + ", species=" + species + ", remarks=" + remarks + '}';
+    }
+
+
 }

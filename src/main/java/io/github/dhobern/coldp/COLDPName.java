@@ -42,6 +42,8 @@ public class COLDPName implements TreeRenderable {
     private String remarks;
     private String link;
     
+    private RankEnum rankEnum = RankEnum.none;
+    
     private COLDPName basionym;
     private Set<COLDPName> combinations;
     private COLDPReference reference;
@@ -128,9 +130,22 @@ public class COLDPName implements TreeRenderable {
     public String getRank() {
         return rank;
     }
-
+    
     public void setRank(String rank) {
         this.rank = rank;
+    }
+
+    public RankEnum getRankEnum() {
+        if (rankEnum == RankEnum.none && rank != null) {
+            try {
+                rankEnum = RankEnum.valueOf(rank.toLowerCase());
+            } catch (Exception e) {
+                LOG.error("Could not parse rank name " + rank);
+                rankEnum = RankEnum.unknown;
+            }
+        }
+        
+        return rankEnum;
     }
 
     public String getUninomial() {
@@ -149,6 +164,18 @@ public class COLDPName implements TreeRenderable {
         this.genus = genus;
     }
 
+    public void fixGenus(String newGenus) {
+        RankEnum currentRank = getRankEnum();
+        if (currentRank.ordinal() >= RankEnum.species.ordinal()
+                && !Objects.equals(genus, newGenus)) {
+            genus = newGenus;
+            scientificName = genus + " " + specificEpithet
+                    + (currentRank.ordinal() > RankEnum.species.ordinal()
+                        ? " " + currentRank.getInfraspecificMarker() + " " + infraspecificEpithet
+                    : "");
+        }
+    }
+    
     public String getSpecificEpithet() {
         return specificEpithet;
     }
