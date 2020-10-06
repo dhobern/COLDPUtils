@@ -174,10 +174,22 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     public String toString() {
         return "CoLDPNameRelation{" + "nameID=" + getNameID() + ", relatedNameID=" + getRelatedNameID() + ", type=" + type + ", referenceID=" + getReferenceID() + ", remarks=" + remarks + '}';
     }
+    
+    public String getSortString() {
+        String s;
+        if (reference != null) {
+            s = reference.getYear();
+        } else if (name.getPublishedInYear() != null) {
+            s = name.getPublishedInYear();
+        } else {
+            s = "9999";
+        }
+        return s + relatedName.getSpecificEpithet() + name.getSpecificEpithet();
+    }
 
     @Override
     public int compareTo(COLDPNameRelation o) {
-        return this.toString().compareTo(o.toString());
+        return this.getSortString().compareTo(o.getSortString());
     }
 
     public static String getCsvHeader() {

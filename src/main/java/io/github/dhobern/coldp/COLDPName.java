@@ -10,6 +10,7 @@ import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class COLDPName implements TreeRenderable {
+public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPName.class);
 
@@ -138,7 +139,11 @@ public class COLDPName implements TreeRenderable {
     public RankEnum getRankEnum() {
         if (rankEnum == RankEnum.none && rank != null) {
             try {
-                rankEnum = RankEnum.valueOf(rank.toLowerCase());
+                String r = rank.toLowerCase();
+                if (r.equals("class")) {
+                    r = "clazz";
+                }
+                rankEnum = RankEnum.valueOf(r.toLowerCase());
             } catch (Exception e) {
                 LOG.error("Could not parse rank name " + rank);
                 rankEnum = RankEnum.unknown;
@@ -166,11 +171,10 @@ public class COLDPName implements TreeRenderable {
 
     public void fixGenus(String newGenus) {
         RankEnum currentRank = getRankEnum();
-        if (currentRank.ordinal() >= RankEnum.species.ordinal()
-                && !Objects.equals(genus, newGenus)) {
+        if (currentRank.inSpeciesGroup() && !Objects.equals(genus, newGenus)) {
             genus = newGenus;
             scientificName = genus + " " + specificEpithet
-                    + (currentRank.ordinal() > RankEnum.species.ordinal()
+                    + (currentRank.infraspecific()
                         ? " " + currentRank.getInfraspecificMarker() + " " + infraspecificEpithet
                     : "");
         }
@@ -381,6 +385,56 @@ public class COLDPName implements TreeRenderable {
         return null;
     }
     
+    public String getNameStem() {
+        if (rankEnum.inSpeciesGroup()) {
+            String stem = genus + " " + trimToStem(specificEpithet);
+            if (rankEnum.infraspecific()) {
+                stem += " " + trimToStem(infraspecificEpithet);
+            }
+            return stem;
+        }
+        return scientificName;
+    }
+    
+    public static String trimScientificNameToStem(String scientificName) {
+       String[] words = scientificName.split(" +");
+        if (words.length >= 2) {
+            scientificName = words[0] + " " + trimToStem(words[1]);
+            for (int i = 2; i < words.length - 1; i++) {
+                if(!words[i].endsWith(".")) {
+                    scientificName += " " + trimToStem(words[i]);
+                }
+            }
+        }
+        return scientificName;
+    }
+    
+    public static String getScientificNameFromParts(RankEnum r, String uOrG, String s, String i) {
+        String sn = uOrG;
+        if (r.inSpeciesGroup()) {
+            sn += " " + s;
+            if (r.infraspecific()) {
+                String marker = r.getInfraspecificMarker();
+                if (marker != null && marker.length() > 0) {
+                    sn += " " + marker;
+                }
+                sn += " " + i;
+            }
+        }
+        return sn;
+    }
+    
+    private static String trimToStem(String epithet) {
+        if (epithet == null) {
+            return "";
+        } else if (epithet.endsWith("us")) {
+            return epithet.substring(0, epithet.length() - 2);
+        } else if (epithet.endsWith("a")) {
+            return epithet.substring(0, epithet.length() - 1);
+        }
+        return epithet;
+    }
+    
     @Override
     public String toString() {
         return "CoLDP_Name{" + "ID=" + ID + ", basionymID=" + getBasionymID() + ", scientificName=" + scientificName + ", authorship=" + authorship + ", rank=" + rank + ", uninomial=" + uninomial + ", genus=" + genus + ", specificEpithet=" + specificEpithet + ", infraspecificEpithet=" + infraspecificEpithet + ", referenceID=" + getReferenceID() + ", publishedInPage=" + publishedInPage + ", publishedInYear=" + publishedInYear + ", code=" + code + ", status=" + status + ", remarks=" + remarks + ", link=" + link + '}';
@@ -469,21 +523,23 @@ public class COLDPName implements TreeRenderable {
             }
 
             if (nameRelations != null) {
-                for (COLDPNameRelation nameRelation : nameRelations) {
-                    if (nameRelation.getReference() != null) {
-                        context.addReference(nameRelation.getReference());
-                    }
-                    nameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
-                }
+                nameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
+                        .forEach(nameRelation ->  {
+                                    if (nameRelation.getReference() != null) {
+                                        context.addReference(nameRelation.getReference());
+                                    }
+                                    nameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                                });
             }
 
             if (relatedNameRelations != null) {
-                for (COLDPNameRelation relatedNameRelation : relatedNameRelations) {
-                    if (relatedNameRelation.getReference() != null) {
-                        context.addReference(relatedNameRelation.getReference());
-                    }
-                    relatedNameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
-                }
+                relatedNameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
+                        .forEach(relatedNameRelation ->  {
+                                    if (relatedNameRelation.getReference() != null) {
+                                        context.addReference(relatedNameRelation.getReference());
+                                    }
+                                    relatedNameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                                });
             }
 
             if (synonym == null && remarks != null) {
@@ -530,5 +586,10 @@ public class COLDPName implements TreeRenderable {
         }
 
         return scientificName + authorship;    
+    }
+
+    @Override
+    public int compareTo(COLDPName o) {
+        return this.getID().compareTo(o.getID());
     }
 }

@@ -178,6 +178,18 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
                 + ", remarks=" + remarks + '}';
     }
 
+    public String getSortString() {
+        String s;
+        if (reference != null) {
+            s = reference.getYear();
+        } else if (name.getPublishedInYear() != null) {
+            s = name.getPublishedInYear();
+        } else {
+            s = "9999";
+        }
+        return s + name.getSpecificEpithet();
+    }
+
     @Override
     public int compareTo(COLDPSynonym o) {
         return this.toString().compareTo(o.toString());

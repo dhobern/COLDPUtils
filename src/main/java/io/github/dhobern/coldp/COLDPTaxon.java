@@ -566,9 +566,13 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
             writer.println(context.getIndent() + "<div class=\"Synonyms\">");
 
-            for (COLDPSynonym synonym : synonyms) {
-                synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
-            }
+            synonyms.stream().sorted(Comparator.comparing(COLDPSynonym::getSortString))
+                .forEach(synonym ->  {
+                            if (synonym.getReference() != null) {
+                                context.addReference(synonym.getReference());
+                            }
+                            synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
+                        });
 
             writer.println(context.getIndent() + "</div>");
         }
