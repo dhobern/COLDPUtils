@@ -131,7 +131,16 @@ public class COLDataPackage {
         return rootTaxa;
     }
 
-    public COLDPTaxon getTaxonByName(String name) {
+    public COLDPName getNameByScientificName(String scientificName) {
+        for (COLDPName name : names.values()) {
+            if (name.getScientificName().equals(scientificName)) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    public COLDPTaxon getTaxonByScientificName(String name) {
         for (COLDPTaxon taxon : taxa.values()) {
             if (taxon.getName().getScientificName().equals(name)) {
                 return taxon;
@@ -400,7 +409,7 @@ public class COLDataPackage {
         String fileName = folderName + baseName + suffix + ".csv";
         
         if (!overwrite && (new File(fileName)).exists()) {
-            LOG.error("File " + fileName + "exists");
+            LOG.error("File " + fileName + " exists");
             return null;
         }
         

@@ -33,7 +33,7 @@ public enum RankEnum {
     tribe(true, false, null),
     genus(true, false, null),
     species(false, false, null),
-    subspecies(false, true, "ssp."),
+    subspecies(false, true, null),
     variety(false, true, "var."),
     form(false, true, "f."),
     aberration(false, true, "ab.");
@@ -61,5 +61,17 @@ public enum RankEnum {
 
     public String getInfraspecificMarker() {
         return infraspecificMarker;
+    }
+    
+    public boolean inSpeciesGroup() {
+        return this.ordinal() >= species.ordinal();
+    }
+    
+    public boolean infraspecific() {
+        return this.ordinal() > species.ordinal();
+    }
+    
+    public String getRankName() {
+        return (this == clazz ? "class" : name());
     }
 }

@@ -16,10 +16,12 @@
 
 package io.github.dhobern.coldp;
 
-import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import static io.github.dhobern.utils.StringUtils.buildCSV;
+import static io.github.dhobern.utils.CollectionUtils.getKeyedSets;
+import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
+import io.github.dhobern.utils.CSVReader;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +33,12 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -149,6 +156,7 @@ public class COLDPTool {
     private static boolean verbose = false;
     private static boolean fixNameSameReferenceBasionym = false;
     private static ModificationStrategy modificationStrategy = ModificationStrategy.CAUTIOUS;
+    private static String treatmentFileName;
     
     private static OutputFormat format = OutputFormat.HTML;
     private static String newCsvSuffix = "-NEW";
@@ -226,7 +234,7 @@ public class COLDPTool {
                     }
 
                     if(selectedTaxonName != null) {
-                        COLDPTaxon taxon = coldp.getTaxonByName(selectedTaxonName);
+                        COLDPTaxon taxon = coldp.getTaxonByScientificName(selectedTaxonName);
 
                         if (taxon == null) {
                             reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
@@ -252,14 +260,16 @@ public class COLDPTool {
     
     private static void executeModify(String[] arguments) {
         if (parseModifyComandLine(arguments)) {
+            
+            boolean continueProcessing  = true;
 
             COLDataPackage coldp = new COLDataPackage(coldpFolderName);
-
-            if (newIdentifierType == IdentifierType.Int) {
-                coldp.tidyIdentifiers();
+            
+            if (treatmentFileName != null) {
+                continueProcessing = processTreatmentFile(coldp, treatmentFileName);
             }
             
-            if (fixNameSameReferenceBasionym) {
+            if (continueProcessing && fixNameSameReferenceBasionym) {
                 for (COLDPName name : coldp.getNames().values()) {
                     if (!name.getID().equals(name.getBasionymID())) {
                         COLDPName basionym = name.getBasionym();
@@ -283,8 +293,152 @@ public class COLDPTool {
                 }
             }
 
+            // Changing identifiers should be the last stage, since it
+            // affects various collections
+            if (continueProcessing && newIdentifierType == IdentifierType.Int) {
+                coldp.tidyIdentifiers();
+            }
+
             coldp.write(outputFolderName, newCsvSuffix, overwrite);
         }
+    }
+    
+    private static boolean processTreatmentFile(COLDataPackage coldp, String fileName) {
+        boolean continueProcessing = true;
+        
+        List<String> issues = new ArrayList<>();
+        CSVReader<ReferenceDetails> detailReader;
+        try {
+            detailReader = new CSVReader<>(fileName, ReferenceDetails.class, ",");
+            List<ReferenceDetails> items = detailReader.getList();
+            Map<String,Set<COLDPName>> namesByScientificName = getKeyedSets(coldp.getNames().values(), COLDPName::getScientificName);
+            Map<String,Set<COLDPName>> namesByStems = getKeyedSets(coldp.getNames().values(), COLDPName::getNameStem);
+
+            for (ReferenceDetails item : items) {
+                String scientificName = item.getScientificName();
+
+                // This allows for the name key to be supplied directly
+                COLDPName name = coldp.getNames().get(scientificName);
+
+                if (name == null) {
+                    Set<COLDPName> names = namesByScientificName.get(scientificName);
+                    if (names == null || names.size() == 0) {
+                        Set<COLDPName> namesByStem = namesByStems.get(COLDPName.trimScientificNameToStem(scientificName));
+                        if (namesByStem == null || namesByStem.size() == 0) {
+                            issues.add("Name " + scientificName + " not recognised");
+                            continueProcessing = false;
+                        } else if (namesByStem.size() == 1) {
+                            name = namesByStem.iterator().next();
+                            issues.add("Name " + scientificName + " will be interpreted as " 
+                                    + name.getScientificName() + " " + name.getAuthorship());
+                        } else {
+                            String message = "Name " + scientificName + " may match several - use ID for correct name:";
+                            for (COLDPName n : namesByStem) {
+                                message += " ID [" + n.getID() + "] -> " 
+                                        + n.getScientificName() + " " + n.getAuthorship() 
+                                        + (n.getTaxon() == null ? " (not accepted)" : " (accepted)");
+                                issues.add(message);
+                                continueProcessing = false;
+                            }
+                        }
+                    } else if (names.size() == 1) {
+                        name = names.iterator().next();
+                    } else if (names.size() > 1) {
+                        String message = "Name " + scientificName + " ambiguous - use ID for correct name:";
+                        for (COLDPName n : names) {
+                            message += " ID [" + n.getID() + "] -> " 
+                                    + n.getScientificName() + " " + n.getAuthorship() 
+                                    + (n.getTaxon() == null ? " (not accepted)" : " (accepted)");
+                            issues.add(message);
+                            continueProcessing = false;
+                        }
+                    }
+
+                    COLDPTaxon taxon = null;
+
+                    if (name != null) {
+                        taxon = name.getTaxon();
+
+                        if (taxon == null) {
+                            if (name.getSynonyms() != null && name.getSynonyms().size() != 0) {
+                                if (name.getSynonyms().size() == 1) {
+                                    taxon = name.getSynonyms().iterator().next().getTaxon();
+                                    issues.add("Name " + scientificName + " will be treated as a synonym for " 
+                                            + taxon.getName().getScientificName() + " " + taxon.getName().getAuthorship());
+                                } else {
+                                    issues.add("Name " + scientificName + " is a synonym for multiple taxa");
+                                    continueProcessing = false;
+                                }
+                            } else {
+                                issues.add("Name " + scientificName + " not associated with a taxon");
+                                continueProcessing = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (issues != null) {
+                for (String issue : issues) {
+                    System.err.println(issue);
+                }
+            }
+        } catch (UnsupportedEncodingException | FileNotFoundException ex) {
+            LOG.error("Could not process treatment file " + fileName, ex);
+        }
+        
+        return continueProcessing;
+    }
+    
+    public static COLDPName addName(COLDataPackage coldp, RankEnum rankEnum, String uninomialOrGenus, 
+                                    String specificEpithet, String infraspecificEpithet, 
+                                    String authorship, COLDPName basionym, COLDPTaxon taxon, 
+                                    COLDPReference reference, String page, String url, 
+                                    String nameRemarks, String nameStatus, String taxonStatus,
+                                    String taxonRemarks) {
+        String scientificName = COLDPName.getScientificNameFromParts(rankEnum, uninomialOrGenus, specificEpithet, infraspecificEpithet);
+        COLDPName name = coldp.getNameByScientificName(scientificName);
+        if (name != null) {
+            LOG.error("Name " + scientificName + " already exists [" + name.getID() + "]");
+        } else {
+            name = coldp.newName();
+            name.setRank(rankEnum.getRankName());
+            name.setScientificName(scientificName);
+            if (rankEnum.isUninomial()) {
+                name.setUninomial(uninomialOrGenus);
+            } else {
+                name.setGenus(uninomialOrGenus);
+                name.setSpecificEpithet(specificEpithet);
+                name.setInfraspecificEpithet(infraspecificEpithet);
+            }
+            name.setAuthorship(authorship);
+            name.setReference(reference);
+            name.setPublishedInPage(page);
+            name.setPublishedInYear(reference != null 
+                            ? reference.getYear()
+                            : (authorship != null ? getYearFromAuthorship(authorship) : null));
+            if (taxon == null) {
+                 // name.setTaxon
+            } else {
+                COLDPSynonym synonym = coldp.newSynonym();
+                synonym.setTaxon(taxon);
+                synonym.setName(name);
+                synonym.setReference(reference);
+                synonym.setStatus(taxonStatus);
+                synonym.setRemarks(taxonRemarks);
+            }
+        }
+        
+        return name;
+    }
+    
+    private static String getYearFromAuthorship(String authorship) {
+        Pattern pattern = Pattern.compile("[0-9]{4}");
+        Matcher matcher = pattern.matcher(authorship);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return null;
     }
     
     private static void executeValidate(String[] arguments) {
@@ -578,6 +732,9 @@ public class COLDPTool {
                 .addOption("I", "new-identifer-type", true, "Update type of "
                                    + "identifiers for references, names and "
                                    + "taxa, one of Int, UUID and String")
+                .addOption("T", "treatment-file", true, 
+                            "File containing name reference and distribution "
+                                    + "data from one or more publications")
                 .addOption("R", "fix-combination-reference", false, 
                            "Remove reference details from combination name "
                                    + "records where these are identical with the "
@@ -675,6 +832,12 @@ public class COLDPTool {
                         } 
                         if (verbose) {
                             reportInfo("Suffix for new CSV file names: " + newCsvSuffix);
+                        }
+                        break;
+                    case "T":
+                        treatmentFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Treatment file name: " + treatmentFileName);
                         }
                         break;
                 }
