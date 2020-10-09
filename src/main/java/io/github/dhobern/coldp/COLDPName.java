@@ -66,7 +66,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }
 
     public String getBasionymID() {
-        return (basionym == null) ? basionymID : basionym.getID();
+        return (basionym == null) ? (basionymID == null ? ID : basionymID) : basionym.getID();
     }
 
     public void setBasionymID(String basionymID) {
