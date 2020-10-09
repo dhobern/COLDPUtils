@@ -22,6 +22,7 @@ import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
 import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import io.github.dhobern.utils.CSVReader;
+import static io.github.dhobern.utils.ZipUtils.zipFolder;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +32,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,7 +122,17 @@ public class COLDPTool {
      * Enumeration of command names
      */
     private static enum CommandName {
-        NONE, TOHTML, MODIFY, VALIDATE; 
+        NONE(false), TOHTML(false), VALIDATE(false), MODIFY(true), EDIT(true); 
+        
+        private boolean backupFirst;
+        
+        CommandName(boolean backupFirst) {
+            this.backupFirst = backupFirst;
+        }
+        
+        public boolean performBackupFirst() {
+            return backupFirst;
+        }
     }
 
     /**
@@ -157,6 +172,7 @@ public class COLDPTool {
     private static boolean fixNameSameReferenceBasionym = false;
     private static ModificationStrategy modificationStrategy = ModificationStrategy.CAUTIOUS;
     private static String treatmentFileName;
+    private static String backupFolderName = ".";
     
     private static OutputFormat format = OutputFormat.HTML;
     private static String newCsvSuffix = "-NEW";
@@ -188,10 +204,26 @@ public class COLDPTool {
             return;
         }
         
+        boolean continueExecution = true;
+        
         switch (commandName) {
-            case TOHTML -> executeToHTML(arguments);
-            case MODIFY -> executeModify(arguments);
-            case VALIDATE -> executeValidate(arguments);
+            case VALIDATE -> continueExecution = parseValidateCommandLine(arguments);
+            case TOHTML -> continueExecution = parseToHTMLCommandLine(arguments);
+            case MODIFY -> continueExecution = parseModifyCommandLine(arguments);
+            case EDIT -> continueExecution = parseEditCommandLine(arguments);
+        }
+        
+        if (continueExecution && commandName.performBackupFirst()) {
+            continueExecution = backupCOLDP();
+        }
+        
+        if (continueExecution) {
+            switch (commandName) {
+                case TOHTML -> executeToHTML();
+                case MODIFY -> executeModify();
+                case VALIDATE -> executeValidate();
+                case EDIT -> executeEdit();
+            }
         }
         
         if (logWriter != null) {
@@ -204,103 +236,104 @@ public class COLDPTool {
         }
     }
     
-    private static void executeToHTML(String[] arguments) {
-        boolean continueExecution = parseToHTMLComandLine(arguments);
+    private static void executeToHTML() {
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
         
-        if (continueExecution) {
-           
-            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+        boolean continueExecution = true;
 
-            if (format == OutputFormat.HTML) {
-                PrintWriter writer = null;
+        if (format == OutputFormat.HTML) {
+            PrintWriter writer = null;
 
-                if (outputFileName == null) {
-                    writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
-                } else if (!overwrite && new File(outputFileName).exists()) {
-                    reportError("File exists: " + outputFileName + " - specify -x to overwrite");
-                    continueExecution = false;
-                } else {
-                    try {
-                        writer = new PrintWriter(outputFileName, "UTF-8");
-                    } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                        reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
-                    }
+            if (outputFileName == null) {
+                writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+            } else if (!overwrite && new File(outputFileName).exists()) {
+                reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+                continueExecution = false;
+            } else {
+                try {
+                    writer = new PrintWriter(outputFileName, "UTF-8");
+                } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                    reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
+                }
+            }
+
+            if (continueExecution && writer != null) {
+
+                if (templateReader != null) {
+                    writeTemplate(writer, templateReader, templateEyecatcherText);
                 }
 
-                if (continueExecution && writer != null) {
+                if(selectedTaxonName != null) {
+                    COLDPTaxon taxon = coldp.getTaxonByScientificName(selectedTaxonName);
 
-                    if (templateReader != null) {
-                        writeTemplate(writer, templateReader, templateEyecatcherText);
-                    }
-
-                    if(selectedTaxonName != null) {
-                        COLDPTaxon taxon = coldp.getTaxonByScientificName(selectedTaxonName);
-
-                        if (taxon == null) {
-                            reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
-                        } else {
-                            renderHigherTaxa(writer, taxon);
-                            renderTaxon(writer, taxon);
-                        }
+                    if (taxon == null) {
+                        reportError("Selected taxon name " + selectedTaxonName + " not found in " + coldpFolderName);
                     } else {
-                        for(COLDPTaxon taxon : coldp.getRootTaxa()) {
-                            renderTaxon(writer, taxon);
-                        }
+                        renderHigherTaxa(writer, taxon);
+                        renderTaxon(writer, taxon);
                     }
-
-                    if (templateReader != null) {
-                        writeTemplate(writer, templateReader, null);
+                } else {
+                    for(COLDPTaxon taxon : coldp.getRootTaxa()) {
+                        renderTaxon(writer, taxon);
                     }
-
-                    writer.close();
                 }
+
+                if (templateReader != null) {
+                    writeTemplate(writer, templateReader, null);
+                }
+
+                writer.close();
             }
         }
     }
     
-    private static void executeModify(String[] arguments) {
-        if (parseModifyComandLine(arguments)) {
-            
-            boolean continueProcessing  = true;
+    private static void executeEdit() {
+        boolean continueProcessing  = true;
 
-            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
-            
-            if (treatmentFileName != null) {
-                continueProcessing = processTreatmentFile(coldp, treatmentFileName);
-            }
-            
-            if (continueProcessing && fixNameSameReferenceBasionym) {
-                for (COLDPName name : coldp.getNames().values()) {
-                    if (!name.getID().equals(name.getBasionymID())) {
-                        COLDPName basionym = name.getBasionym();
-                        if (    name.getReferenceID() != null 
-                             && basionym.getReferenceID() != null
-                             && name.getReferenceID().equals(basionym.getReferenceID())
-                             && Objects.equals(name.getPublishedInPage(), basionym.getPublishedInPage())) {
-                            COLDPNameReference nr = name.getRedundantNameReference(modificationStrategy == ModificationStrategy.CAUTIOUS);
-                            if (nr != null) {
-                                if (basionym.getRedundantNameReference(false) == null) {
-                                    nr.setName(basionym);
-                                } else {
-                                    coldp.deleteNameReference(nr);
-                                }
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
+    }
+    
+    private static void executeModify() {
+        boolean continueProcessing  = true;
+
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
+        if (treatmentFileName != null) {
+            continueProcessing = processTreatmentFile(coldp, treatmentFileName);
+        }
+
+        if (continueProcessing && fixNameSameReferenceBasionym) {
+            for (COLDPName name : coldp.getNames().values()) {
+                if (!name.getID().equals(name.getBasionymID())) {
+                    COLDPName basionym = name.getBasionym();
+                    if (    name.getReferenceID() != null 
+                         && basionym.getReferenceID() != null
+                         && name.getReferenceID().equals(basionym.getReferenceID())
+                         && Objects.equals(name.getPublishedInPage(), basionym.getPublishedInPage())) {
+                        COLDPNameReference nr = name.getRedundantNameReference(modificationStrategy == ModificationStrategy.CAUTIOUS);
+                        if (nr != null) {
+                            if (basionym.getRedundantNameReference(false) == null) {
+                                nr.setName(basionym);
+                            } else {
+                                coldp.deleteNameReference(nr);
                             }
-                            name.setReference(null);
-                            name.setPublishedInPage(null);
-                            name.setPublishedInYear(null);
                         }
+                        name.setReference(null);
+                        name.setPublishedInPage(null);
+                        name.setPublishedInYear(null);
                     }
                 }
             }
-
-            // Changing identifiers should be the last stage, since it
-            // affects various collections
-            if (continueProcessing && newIdentifierType == IdentifierType.Int) {
-                coldp.tidyIdentifiers();
-            }
-
-            coldp.write(outputFolderName, newCsvSuffix, overwrite);
         }
+
+        // Changing identifiers should be the last stage, since it
+        // affects various collections
+        if (continueProcessing && newIdentifierType == IdentifierType.Int) {
+            coldp.tidyIdentifiers();
+        }
+
+        coldp.write(outputFolderName, newCsvSuffix, overwrite);
     }
     
     private static boolean processTreatmentFile(COLDataPackage coldp, String fileName) {
@@ -389,128 +422,75 @@ public class COLDPTool {
         
         return continueProcessing;
     }
-    
-    public static COLDPName addName(COLDataPackage coldp, RankEnum rankEnum, String uninomialOrGenus, 
-                                    String specificEpithet, String infraspecificEpithet, 
-                                    String authorship, COLDPName basionym, COLDPTaxon taxon, 
-                                    COLDPReference reference, String page, String url, 
-                                    String nameRemarks, String nameStatus, String taxonStatus,
-                                    String taxonRemarks) {
-        String scientificName = COLDPName.getScientificNameFromParts(rankEnum, uninomialOrGenus, specificEpithet, infraspecificEpithet);
-        COLDPName name = coldp.getNameByScientificName(scientificName);
-        if (name != null) {
-            LOG.error("Name " + scientificName + " already exists [" + name.getID() + "]");
+
+    private static void executeValidate() {
+        COLDataPackage coldp = new COLDataPackage(coldpFolderName);
+
+        boolean continueExecution = true;
+
+        PrintWriter writer = null;
+
+        if (outputFileName == null) {
+            writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
+        } else if (!overwrite && new File(outputFileName).exists()) {
+            reportError("File exists: " + outputFileName + " - specify -x to overwrite");
+            continueExecution = false;
         } else {
-            name = coldp.newName();
-            name.setRank(rankEnum.getRankName());
-            name.setScientificName(scientificName);
-            if (rankEnum.isUninomial()) {
-                name.setUninomial(uninomialOrGenus);
-            } else {
-                name.setGenus(uninomialOrGenus);
-                name.setSpecificEpithet(specificEpithet);
-                name.setInfraspecificEpithet(infraspecificEpithet);
-            }
-            name.setAuthorship(authorship);
-            name.setReference(reference);
-            name.setPublishedInPage(page);
-            name.setPublishedInYear(reference != null 
-                            ? reference.getYear()
-                            : (authorship != null ? getYearFromAuthorship(authorship) : null));
-            if (taxon == null) {
-                 // name.setTaxon
-            } else {
-                COLDPSynonym synonym = coldp.newSynonym();
-                synonym.setTaxon(taxon);
-                synonym.setName(name);
-                synonym.setReference(reference);
-                synonym.setStatus(taxonStatus);
-                synonym.setRemarks(taxonRemarks);
+            try {
+                writer = new PrintWriter(outputFileName, "UTF-8");
+            } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+                reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
             }
         }
-        
-        return name;
-    }
-    
-    private static String getYearFromAuthorship(String authorship) {
-        Pattern pattern = Pattern.compile("[0-9]{4}");
-        Matcher matcher = pattern.matcher(authorship);
-        if (matcher.find()) {
-            return matcher.group();
-        }
-        return null;
-    }
-    
-    private static void executeValidate(String[] arguments) {
-        boolean continueExecution = parseValidateComandLine(arguments);
-        
-        if (continueExecution) {
-            COLDataPackage coldp = new COLDataPackage(coldpFolderName);
 
-            PrintWriter writer = null;
+        if (continueExecution && logWriter != null) {
 
-            if (outputFileName == null) {
-                writer = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
-            } else if (!overwrite && new File(outputFileName).exists()) {
-                reportError("File exists: " + outputFileName + " - specify -x to overwrite");
-                continueExecution = false;
-            } else {
-                try {
-                    writer = new PrintWriter(outputFileName, "UTF-8");
-                } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-                    reportError("Could not open output file [" + outputFileName + "]:\n" + ex);
-                }
-            }
+            for (COLDPName name : coldp.getNames().values()) {
 
-            if (continueExecution && logWriter != null) {
+                // Is the basionym supplied (default is self-reference for
+                // original combination)? 
+                //      --> NAME_NO_BASIONYM
 
-                for (COLDPName name : coldp.getNames().values()) {
+                // If the basionym is different from the current name, does
+                // the name have the same reference as the basionym? 
+                //      --> NAME_SAME_REFERENCE_BASIONYM
 
-                    // Is the basionym supplied (default is self-reference for
-                    // original combination)? 
-                    //      --> NAME_NO_BASIONYM
-
-                    // If the basionym is different from the current name, does
-                    // the name have the same reference as the basionym? 
-                    //      --> NAME_SAME_REFERENCE_BASIONYM
-
-                    if (name.getBasionymID() == null) {
-                        logIssue(ValidationCode.NAME_NO_BASIONYM, "name", 
-                                name.getID().toString(), 
-                                name.getScientificName() + " " + name.getAuthorship());
-                    } else if (!name.getID().equals(name.getBasionymID())) {
-                        COLDPName basionym = name.getBasionym();
-                        if (    basionym.getReferenceID() != null 
-                             && name.getReferenceID() != null
-                             && basionym.getReferenceID().equals(name.getReferenceID())) {
-                            logIssue(ValidationCode.NAME_SAME_REFERENCE_BASIONYM, "name", name.getID().toString(), 
-                                name.getScientificName() + " " + name.getAuthorship());
-                        }
-                    }
-
-                    // Is the reference supplied for an original combination? 
-                    //      --> NAME_NO_REFERENCE                
-                    // Is the reference supplied for an subsequent combination? 
-                    //      --> COMBINATION_NO_REFERENCE
-
-                    if (name.getReferenceID() == null) {
-                        logIssue(name.getID().equals(name.getBasionymID())
-                                    ? ValidationCode.NAME_NO_REFERENCE
-                                    : ValidationCode.COMBINATION_NO_REFERENCE, 
-                                "name", name.getID().toString(), 
-                                name.getScientificName() + " " + name.getAuthorship());
-                    } else {
-                        COLDPNameReference nr = name.getRedundantNameReference(true);
-                        if (nr != null) {
-                            logIssue(ValidationCode.NAMEREFERENCE_REDUNDANT, "name",
-                                     name.getID().toString(), 
-                                     name.getScientificName() + " " + name.getAuthorship() + " --> " + nr.toCsv());
-                        }
+                if (name.getBasionymID() == null) {
+                    logIssue(ValidationCode.NAME_NO_BASIONYM, "name", 
+                            name.getID().toString(), 
+                            name.getScientificName() + " " + name.getAuthorship());
+                } else if (!name.getID().equals(name.getBasionymID())) {
+                    COLDPName basionym = name.getBasionym();
+                    if (    basionym.getReferenceID() != null 
+                         && name.getReferenceID() != null
+                         && basionym.getReferenceID().equals(name.getReferenceID())) {
+                        logIssue(ValidationCode.NAME_SAME_REFERENCE_BASIONYM, "name", name.getID().toString(), 
+                            name.getScientificName() + " " + name.getAuthorship());
                     }
                 }
 
-                writer.close();
+                // Is the reference supplied for an original combination? 
+                //      --> NAME_NO_REFERENCE                
+                // Is the reference supplied for an subsequent combination? 
+                //      --> COMBINATION_NO_REFERENCE
+
+                if (name.getReferenceID() == null) {
+                    logIssue(name.getID().equals(name.getBasionymID())
+                                ? ValidationCode.NAME_NO_REFERENCE
+                                : ValidationCode.COMBINATION_NO_REFERENCE, 
+                            "name", name.getID().toString(), 
+                            name.getScientificName() + " " + name.getAuthorship());
+                } else {
+                    COLDPNameReference nr = name.getRedundantNameReference(true);
+                    if (nr != null) {
+                        logIssue(ValidationCode.NAMEREFERENCE_REDUNDANT, "name",
+                                 name.getID().toString(), 
+                                 name.getScientificName() + " " + name.getAuthorship() + " --> " + nr.toCsv());
+                    }
+                }
             }
+
+            writer.close();
         }
     }
     
@@ -539,7 +519,7 @@ public class COLDPTool {
         }
     }
 
-    private static boolean parseToHTMLComandLine(String[] argv) {
+    private static boolean parseToHTMLCommandLine(String[] argv) {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
@@ -706,7 +686,107 @@ public class COLDPTool {
         return (command != null);
     }
 
-    private static boolean parseModifyComandLine(String[] argv) {
+    private static boolean parseEditCommandLine(String[] argv) {
+        CommandLine command = null;
+        Options options = new Options();
+        options.addOption("l", "log-file", true, "Log file name")
+                .addOption("L", "log-threshold", true, "Log reporting level, one of ERROR, WARNING, INFO")
+                .addOption("Z", "zip-backup-folder", true, "Name of folder to store ZIP file backups, default current folder")
+                .addOption("i", "identifier-type", true, 
+                           "Current identifier type for Taxon, Name and "
+                                   + "Reference records - one of Int, UUID and "
+                                   + "String - defaults to match existing "
+                                   + "records")
+                .addOption("h", "help", false, "Show help")
+                .addOption("v", "verbose", false, "Verbose");
+        
+        CommandLineParser parser = new DefaultParser();
+        
+        try {
+            command = parser.parse(options, argv);
+        } catch (ParseException ex) {
+            reportError("Failed to parse command line: " + ex.toString());
+        }
+
+        if (command != null) {
+            verbose = command.hasOption("v");
+            
+            for (Option o : command.getOptions()) {
+                switch (o.getOpt()) {
+                    case "i":
+                        try {
+                            currentIdentifierType = IdentifierType.valueOf(o.getValue());
+                        } catch(Exception e) {
+                            // Swallow exception - error reporting will occur automatically
+                            currentIdentifierType = null;
+                        }
+                        if (format == null) {
+                            reportError("Unrecognised current identifier type for option -I: " + o.getValue());
+                            command = null;
+                        } else if (verbose) {
+                            reportInfo("Selected current identifier type: " + currentIdentifierType.name());
+                        }
+                        break;
+                    case "l":
+                        logFileName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Log file name: " + logFileName);
+                        }
+                        break;
+                    case "L":
+                        try {
+                            logThreshold = ValidationSeverity.valueOf(o.getValue().toUpperCase());
+                            if (verbose) {
+                                reportInfo("Log threshold: " + logThreshold.name());
+                            }
+                        } catch(Exception e) {
+                            reportError("Invalid log threshold : " + o.getValue());
+                        }
+                        break;
+                    case "Z":
+                       backupFolderName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Backup folder name: " + backupFolderName);
+                        }
+                        break;
+                }
+            }
+            if (command != null) {
+                String[] args = command.getArgs();
+                if (args != null) {
+                    switch (command.getArgs().length) {
+                        case 0:
+                            reportError("CoLDP input folder name not specified");
+                            command = null;
+                            break;
+                        case 1:
+                            coldpFolderName = command.getArgs()[0];
+                            if (verbose) {
+                                reportInfo("CoLDP input folder name: " + coldpFolderName);
+                            }
+                            break;
+                        default:
+                            reportError("Too many command line arguments");
+                            command = null;
+                            break;
+                    }
+                }
+            }
+        }
+        
+        if (command == null || command.hasOption("h")) {
+            showHelp(options);
+            command = null;
+        }
+        
+        if (command != null && !openLogWriter()) {
+            command = null;
+        }
+
+        return (command != null);
+    }
+
+    private static boolean parseModifyCommandLine(String[] argv) {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
@@ -714,6 +794,7 @@ public class COLDPTool {
                 .addOption("l", "log-file", true, "Log file name")
                 .addOption("L", "log-threshold", true, 
                            "Log reporting level, one of ERROR, WARNING, INFO")
+                .addOption("Z", "zip-backup-folder", true, "Name of folder to store ZIP file backups, default current folder")
                 .addOption("M", "modification-strategy", true, 
                            "Aggressiveness of efforts to modify data, one of "
                                    + "CAUTIOUS (default), AGGRESSIVE")
@@ -773,6 +854,12 @@ public class COLDPTool {
                             }
                         } catch(Exception e) {
                             reportError("Invalid log threshold : " + o.getValue());
+                        }
+                        break;
+                    case "Z":
+                       backupFolderName = o.getValue();
+                        if (verbose) {
+                            reportInfo("Backup folder name: " + backupFolderName);
                         }
                         break;
                     case "M":
@@ -877,7 +964,7 @@ public class COLDPTool {
         return (command != null);
     }
 
-    private static boolean parseValidateComandLine(String[] argv) {
+    private static boolean parseValidateCommandLine(String[] argv) {
         CommandLine command = null;
         Options options = new Options();
         options.addOption("x", "overwrite", false, "Overwrite existing output file")
@@ -976,6 +1063,31 @@ public class COLDPTool {
         }
 
         return (command != null);
+    }
+    
+    private static boolean backupCOLDP() {
+        boolean success = true;
+        
+        String coldpName = coldpFolderName;
+        int i = coldpName.lastIndexOf("/");
+        if (i > 0) {
+            coldpName = coldpName.substring(i + 1);
+        }
+ 
+        String backupFileName = backupFolderName
+                    + (backupFolderName.endsWith("/") ? "" : "/")
+                    + coldpName + "-"
+                    + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()).replace(":", ".")
+                    + ".zip";
+        
+        try {
+            success = zipFolder(coldpFolderName, backupFileName);
+        } catch (IOException e) {
+            LOG.error("Could not open backup file " + backupFileName, e);
+            success = false;
+        }
+       
+        return success;
     }
 
     private static boolean openLogWriter() {

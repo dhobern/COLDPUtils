@@ -14,13 +14,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +99,70 @@ public class COLDataPackage {
         region.setID(ID);
         regions.put(ID, region);
         return region;
+    }
+    
+    public COLDPName addName(RankEnum rankEnum, String uninomialOrGenus, 
+                             String specificEpithet, String infraspecificEpithet, 
+                             String authorship, COLDPName basionym, COLDPTaxon taxon, COLDPTaxon parent,
+                             COLDPReference reference, String page, String url, 
+                             String nameRemarks, String nameStatus, String taxonStatus,
+                             String taxonRemarks, String scrutinizer) {
+        String scientificName = COLDPName.getScientificNameFromParts(rankEnum, uninomialOrGenus, specificEpithet, infraspecificEpithet);
+        COLDPName name = getNameByScientificName(scientificName);
+        if (name != null) {
+            LOG.error("Name " + scientificName + " already exists [" + name.getID() + "]");
+        } else {
+            name = newName();
+            name.setRank(rankEnum.getRankName());
+            name.setScientificName(scientificName);
+            if (rankEnum.isUninomial()) {
+                name.setUninomial(uninomialOrGenus);
+            } else {
+                name.setGenus(uninomialOrGenus);
+                name.setSpecificEpithet(specificEpithet);
+                name.setInfraspecificEpithet(infraspecificEpithet);
+            }
+            name.setAuthorship(authorship);
+            name.setReference(reference);
+            name.setPublishedInPage(page);
+            name.setPublishedInYear(reference != null 
+                            ? reference.getYear()
+                            : (authorship != null ? getYearFromAuthorship(authorship) : null));
+            if (taxon != null) {
+                COLDPSynonym synonym = newSynonym();
+                synonym.setTaxon(taxon);
+                synonym.setName(name);
+                synonym.setReference(reference);
+                synonym.setStatus(taxonStatus);
+                synonym.setRemarks(taxonRemarks);
+            } else if (parent != null) {
+                taxon = newTaxon();
+                taxon.setParent(parent);
+                taxon.setName(name);
+                taxon.fixHierarchy(false);
+                taxon.setReference(reference);
+                taxon.setRemarks(taxonRemarks);
+                taxon.setScrutinizer(scrutinizer);
+                taxon.setScrutinizerDate(new SimpleDateFormat("yyyy-MM-dd")
+                            .format(Calendar.getInstance().getTime()));
+
+                // The following three lines are a hack for now
+                taxon.setExtinct(parent.isExtinct());
+                taxon.setLifezone(parent.getLifezone());
+                taxon.setTemporalRangeEnd(parent.getTemporalRangeEnd());
+            }
+        }
+        
+        return name;
+    }
+    
+    private static String getYearFromAuthorship(String authorship) {
+        Pattern pattern = Pattern.compile("[0-9]{4}");
+        Matcher matcher = pattern.matcher(authorship);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return null;
     }
     
     public Map<String, COLDPName> getNames() {

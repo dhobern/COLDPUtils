@@ -166,4 +166,26 @@ public class COLDataPackageTest {
         COLDPTaxon falsa = coldp.newTaxon();
         falsa.setParent(Ochyrotica);
     }
+    
+    @Test
+    public void testAddName() {
+        COLDPTaxon Ochyrotica = coldp.getTaxa().get("268");
+        int childCount = Ochyrotica.getChildren().size();
+        
+        COLDPName nova = coldp.addName(RankEnum.species, "Ochyrotica", "nova", null, "Dylan, 1963", null, null, Ochyrotica,
+                      coldp.getReferences().get("813"), "12", "https://hobern.net/", "Not a real species", "established", 
+                      "accepted", "Still not a good species", "Donald Hobern");
+        coldp.addName(RankEnum.species, "Ochyrotica", "malissima", null, "Tengo, 2000", null, nova.getTaxon(), null,
+                      coldp.getReferences().get("1905"), "122", "https://hobern.net/", "Very much not a real species", "established", 
+                      "synonym", "Not in any way a good species", "Donald Hobern");
+        
+        assertEquals(childCount + 1, Ochyrotica.getChildren().size());
+        assertEquals(1, nova.getTaxon().getSynonyms().size());
+        
+        System.out.println(nova.toCSV());
+        System.out.println(nova.getTaxon().getSynonyms().iterator().next().getName().toCSV());
+        
+        Ochyrotica.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None, "  ", 0));
+
+    }
 }
