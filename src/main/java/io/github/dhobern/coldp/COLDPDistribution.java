@@ -186,6 +186,10 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
         return "CoLDPDistribution{" + "taxonID=" + getTaxonID() + ", area=" + getArea() + ", gazetteer=" + gazetteer + ", status=" + status + ", referenceID=" + getReferenceID() + ", remarks=" + remarks + "}";
     }
 
+    public String toReferenceString() {
+        return "Distribution: " + taxon.toReferenceString() + " / " + region.toReferenceString();
+    }
+
     @Override
     public int compareTo(COLDPDistribution o) {
         return this.toString().compareTo(o.toString());

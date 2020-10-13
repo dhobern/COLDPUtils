@@ -178,6 +178,10 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
                 + ", remarks=" + remarks + '}';
     }
 
+    public String toReferenceString() {
+        return "Synonym: " + taxon.toReferenceString() + " / " + name.toReferenceString();
+    }
+
     public String getSortString() {
         String s;
         if (reference != null) {

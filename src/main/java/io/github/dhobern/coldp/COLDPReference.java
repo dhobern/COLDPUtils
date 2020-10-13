@@ -256,6 +256,10 @@ public class COLDPReference implements TreeRenderable {
     public String toCsv() {
         return buildCSV(ID, author, title, year, source, details, link);
     }
+    
+    public String toReferenceString() {
+        return "Reference: " + ID + " - " + author + " - " + year + " - " + title;
+    }
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {

@@ -170,6 +170,10 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
                                     page, link, remarks);
     }
 
+    public String toReferenceString() {
+        return "NameReference: " + name.toReferenceString() + " / " + reference.toReferenceString();
+    }
+
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
         if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
