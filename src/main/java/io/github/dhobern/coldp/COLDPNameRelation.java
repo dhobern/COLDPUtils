@@ -176,7 +176,7 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     }
 
     public String toReferenceString() {
-        return "NameRelation: " + name.toReferenceString() + " / " + type + " / " + relatedName.toReferenceString();
+        return "[" + name.toReferenceString() + "] " + type + " [" + relatedName.toReferenceString() + "]";
     }
     
     public String getSortString() {
@@ -230,6 +230,9 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
                     case "Later homonym":
                         formatted = "Is later homonym of";
                         break;
+                    case "Superfluous":
+                        formatted = "Is superfluous replacement for";
+                        break;
                 }
             } else {
                 nameToRender = name;
@@ -248,6 +251,9 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
                         break;
                     case "Later homonym":
                         formatted = "Has later homonym";
+                        break;
+                    case "Superfluous":
+                        formatted = "Has superfluous replacement";
                         break;
                 }
             }

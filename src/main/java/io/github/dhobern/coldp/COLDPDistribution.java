@@ -187,7 +187,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
 
     public String toReferenceString() {
-        return "Distribution: " + taxon.toReferenceString() + " / " + region.toReferenceString();
+        return "[" + taxon.toReferenceString() + "] in [" + region.toReferenceString() + "]";
     }
 
     @Override

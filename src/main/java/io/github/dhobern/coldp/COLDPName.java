@@ -441,7 +441,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }
     
     public String toReferenceString() {
-        return "Name: " + ID + " - " + scientificName + " " + authorship;
+        return ID + " " + scientificName + " " + authorship;
     }
 
     @Override

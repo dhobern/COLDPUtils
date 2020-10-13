@@ -171,7 +171,7 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     }
 
     public String toReferenceString() {
-        return "NameReference: " + name.toReferenceString() + " / " + reference.toReferenceString();
+        return "[" + name.toReferenceString() + "] in [" + reference.toReferenceString() + "]";
     }
 
     @Override

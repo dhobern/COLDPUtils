@@ -97,6 +97,6 @@ public class COLDPRegion {
     }
     
     public String toReferenceString() {
-        return "Region: " + ID + " - " + name;
+        return  ID + " " + name;
     }
 }

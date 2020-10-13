@@ -11,8 +11,6 @@ import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -614,6 +612,6 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public String toReferenceString() {
-        return "Taxon: " + ID + " - " + name.toReferenceString();
+        return ID + " " + name.toReferenceString();
     }
 }

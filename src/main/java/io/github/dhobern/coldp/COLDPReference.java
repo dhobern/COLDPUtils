@@ -258,7 +258,7 @@ public class COLDPReference implements TreeRenderable {
     }
     
     public String toReferenceString() {
-        return "Reference: " + ID + " - " + author + " - " + year + " - " + title;
+        return ID + " " + abbreviate(author, 25) + ", " + year + ", " + abbreviate(title, 40);
     }
 
     @Override
