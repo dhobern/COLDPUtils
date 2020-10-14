@@ -208,6 +208,10 @@ public class COLDPReference implements TreeRenderable {
         }
     }
 
+    public List<COLDPDistribution> getDistributions() {
+        return distributions;
+    }
+
     @Override
     public int hashCode() {
         int hash = 3;
@@ -258,7 +262,11 @@ public class COLDPReference implements TreeRenderable {
     }
     
     public String toReferenceString() {
-        return ID + " " + abbreviate(author, 25) + ", " + year + ", " + abbreviate(title, 40);
+        return ID + " " + author + ", " + year + ", " + title;
+    }
+
+    public String toReferenceString(int authorLength, int titleLength) {
+        return ID + " " + abbreviate(author, authorLength) + ", " + year + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
     }
 
     @Override

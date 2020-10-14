@@ -49,13 +49,15 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     }
 
     public void setName(COLDPName name) {
-        if (this.name != null) {
-            this.name.deregisterNameRelation(this);
-        }
-        this.name = name;
-        nameID = null;
-        if (name != null) {
-            name.registerNameRelation(this);
+        if (!Objects.equals(this.name, name)) {
+            if (this.name != null) {
+                this.name.deregisterNameRelation(this);
+            }
+            this.name = name;
+            nameID = null;
+            if (name != null) {
+                name.registerNameRelation(this);
+            }
         }
     }
 
@@ -76,13 +78,15 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     }
 
     public void setRelatedName(COLDPName relatedName) {
-        if (this.relatedName != null) {
-            this.relatedName.deregisterRelatedNameRelation(this);
-        }
-        this.relatedName = relatedName;
-        relatedNameID = null;
-        if (relatedName != null) {
-            relatedName.registerRelatedNameRelation(this);
+        if (!Objects.equals(this.relatedName, relatedName)) {
+            if (this.relatedName != null) {
+                this.relatedName.deregisterRelatedNameRelation(this);
+            }
+            this.relatedName = relatedName;
+            relatedNameID = null;
+            if (relatedName != null) {
+                relatedName.registerRelatedNameRelation(this);
+            }
         }
     }
 
@@ -111,13 +115,15 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            this.reference.deregisterNameRelation(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerNameRelation(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                this.reference.deregisterNameRelation(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerNameRelation(this);
+            }
         }
     }
 

@@ -20,11 +20,14 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,11 +223,48 @@ public class COLDataPackage {
     public List<COLDPDistribution> getDistributions() {
         return distributions;
     }
+    
+    public List<COLDPDistribution> findDistributions(Optional<COLDPTaxon> taxon,
+            Optional<COLDPRegion> region, Optional<COLDPReference> reference) {
+        return distributions.stream().filter(d -> {
+            if (taxon != null && !Objects.equals(taxon.orElse(null), d.getTaxon())) return false;
+            if (region != null && !Objects.equals(region.orElse(null), d.getRegion())) return false;
+            if (reference != null && !Objects.equals(reference.orElse(null), d.getReference())) return false;
+            return true;
+        }).collect(Collectors.toList());
+    }
 
     public Map<String, COLDPRegion> getRegions() {
         return regions;
     }
     
+    public boolean deleteReference(COLDPReference r) {
+        if (r != null) {
+            for (COLDPNameReference nr : r.getNameReferences()) {
+                deleteNameReference(nr);
+            }
+            for (COLDPName name : r.getNames()) {
+                name.setReference(null);
+            }
+            for (COLDPTaxon t : r.getTaxa()) {
+                t.setReference(null);
+            }
+            for (COLDPSynonym s : r.getSynonyms()) {
+                s.setReference(null);
+            }
+            for (COLDPNameRelation nr : r.getNameRelations()) {
+                nr.setReference(null);
+            }
+            for (COLDPDistribution d : r.getDistributions()) {
+                d.setReference(null);
+            }
+            references.remove(r);
+            return true;
+        }
+        
+        return false;
+    }
+
     public boolean deleteNameReference(COLDPNameReference nr) {
         if (nr != null) {
             nr.setName(null);

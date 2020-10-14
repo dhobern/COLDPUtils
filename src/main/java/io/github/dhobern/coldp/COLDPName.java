@@ -83,13 +83,15 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }
 
     public void setBasionym(COLDPName basionym) {
-        if (this.basionym != null && !this.basionym.equals(this)) {
-            this.basionym.deregisterCombination(this);
-        }
-        this.basionym = basionym;
-        basionymID = null;
-        if (basionym != null && !basionym.equals(this)) {
-            basionym.registerCombination(this);
+        if (!Objects.equals(this.basionym, basionym)) {
+            if (this.basionym != null && !this.basionym.equals(this)) {
+                this.basionym.deregisterCombination(this);
+            }
+            this.basionym = basionym;
+            basionymID = null;
+            if (basionym != null && !basionym.equals(this)) {
+                basionym.registerCombination(this);
+            }
         }
     }
 
@@ -214,13 +216,15 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            this.reference.deregisterName(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerName(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                this.reference.deregisterName(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerName(this);
+            }
         }
     }
 
@@ -334,10 +338,12 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }
 
     public void setTaxon(COLDPTaxon taxon) {
-        if (this.taxon != null) {
-            LOG.error("Attempted to set taxon to " + taxon + " when name associated with taxon " + this.taxon);
-        } else {
-            this.taxon = taxon;
+        if (!Objects.equals(this.taxon, taxon)) {
+            if (this.taxon != null) {
+                LOG.error("Attempted to set taxon to " + taxon + " when name associated with taxon " + this.taxon);
+            } else {
+                this.taxon = taxon;
+            }
         }
     }
 

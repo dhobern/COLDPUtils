@@ -24,6 +24,7 @@ import org.jline.terminal.TerminalBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.jline.reader.EndOfFileException;
@@ -56,6 +57,7 @@ public class InteractiveCommandLine {
     private String prompt = "> ";
     
     private LineReader lineReader = null; 
+    private Terminal terminal = null;
 
     public static void main(String[] args) {
         InteractiveCommandLine icl = new InteractiveCommandLine();
@@ -79,7 +81,7 @@ public class InteractiveCommandLine {
 
         
         String line;
-        while ((line = icl.readLine("Enter a command", "")) != null) {
+        while ((line = icl.readLine("", "", true)) != null) {
             String[] words = line.split(" ");
             if (words.length > 0) {
                 if (words.length > 1) {
@@ -90,8 +92,7 @@ public class InteractiveCommandLine {
                 switch (words[0].toLowerCase()) {
                     case "n": icl.setName(line == null ? null : coldp.getNameByScientificName(line)); break;
                     case "t": icl.setTaxon(line == null ? null : coldp.getTaxonByScientificName(line)); break;
-                    case "a": icl.setRegion(line == null ? null : coldp.getRegions().get(line)); break;
-                    case "r": icl.setReference(line == null ? null : coldp.getReferences().get(line)); break;
+                    case "a": icl.setRegion(line == null ? null : icl.findRegion(line, coldp)); break;
                     case "nr": 
                         int index = Integer.parseInt(line);
                         icl.setNameReference(
@@ -107,14 +108,6 @@ public class InteractiveCommandLine {
                                         || icl.getName().getNameRelations() == null 
                                         || icl.getName().getNameRelations().size() < index) 
                                     ? null : icl.getName().getNameRelations().get(index - 1));
-                        break;
-                    case "d": 
-                        index = Integer.parseInt(line);
-                        icl.setDistribution(
-                                (line == null || icl.getTaxon() == null 
-                                        || icl.getTaxon().getDistributions() == null 
-                                        || icl.getTaxon().getDistributions().size() < index) 
-                                    ? null : icl.getTaxon().getDistributions().iterator().next());
                         break;
                     case "p":
                         if (icl.getTaxon() != null 
@@ -180,13 +173,16 @@ public class InteractiveCommandLine {
                             }
                         } 
                         break;
+                    case "r": 
+                        icl.setReference(icl.findReference(line, coldp));
+                        break;
                     case "r+":
-                        String author = icl.readLine("Author", "");
-                        String year = icl.readLine("Year", "", "^([0-9]{4})?$");
-                        String title = icl.readLine("Title", "");
-                        String source = icl.readLine("Source", "");
-                        String details = icl.readLine("Details", "");
-                        String link = icl.readLine("Link", "");
+                        String author = icl.readLine("Author", "", false);
+                        String year = icl.readLine("Year", "", "^([0-9]{4})?$", false);
+                        String title = icl.readLine("Title", "", false);
+                        String source = icl.readLine("Source", "", false);
+                        String details = icl.readLine("Details", "", false);
+                        String link = icl.readLine("Link", "", false);
                         if (author != null && year != null && title != null) {
                             COLDPReference reference = coldp.newReference();
                             reference.setAuthor(author);
@@ -201,17 +197,122 @@ public class InteractiveCommandLine {
                     case "r/":
                         COLDPReference reference = icl.getReference();
                         if (reference != null) {
-                            reference.setAuthor(icl.readLine("Author", reference.getAuthor()));
-                            reference.setYear(icl.readLine("Year", reference.getYear(), "^([0-9]{4})?$"));
-                            reference.setTitle(icl.readLine("Title", reference.getTitle()));
-                            reference.setSource(icl.readLine("Source", reference.getSource()));
-                            reference.setDetails(icl.readLine("Details", reference.getDetails()));
-                            reference.setLink(icl.readLine("Link", reference.getLink()));
+                            reference.setAuthor(icl.readLine("Author", reference.getAuthor(), false));
+                            reference.setYear(icl.readLine("Year", reference.getYear(), "^([0-9]{4})?$", false));
+                            reference.setTitle(icl.readLine("Title", reference.getTitle(), false));
+                            reference.setSource(icl.readLine("Source", reference.getSource(), false));
+                            reference.setDetails(icl.readLine("Details", reference.getDetails(), false));
+                            reference.setLink(icl.readLine("Link", reference.getLink(), false));
                         }
                         break;
+                    case "r-":
+                        reference = icl.getReference();
+                        if (reference != null && icl.getConfirmation("Delete reference " + reference.toReferenceString(25, 40) + "?")) {
+                            icl.setReference(null);
+                            coldp.deleteReference(reference);
+                        }
                     case "w":
-                        coldp.write(coldpFolderName, "-JUNK");
+                        coldp.write(coldpFolderName, "");
                         break;
+                    case "d":
+                        if (icl.getTaxon() != null 
+                            && icl.getTaxon().getDistributions() != null) {
+                            List<COLDPDistribution> distributions;
+                            if (line != null) {
+                                final String filter = line;
+                                distributions = icl.getTaxon()
+                                        .getDistributions()
+                                        .stream()
+                                        .filter(d -> d.toReferenceString().contains(filter))
+                                        .collect(Collectors.toList());
+                            } else {
+                                distributions = new ArrayList<>(icl.getTaxon().getDistributions());
+                            }
+                            int count = distributions.size();
+                            if (count == 1) {
+                                icl.setDistribution(distributions.get(0));
+                            } else if (count > 1) {
+                                String[] items = new String[count];
+                                i = 0;
+                                for (COLDPDistribution c : distributions) {
+                                    items[i++] =  c.toReferenceString();
+                                }
+                                int selection = icl.selectFromList(items);
+                                if (selection >= 0) {
+                                    icl.setDistribution(distributions.get(selection));
+                                }
+                            }
+                        } 
+                        break;
+                    case "d/":
+                        COLDPDistribution distribution = icl.getDistribution();
+                        if (distribution != null) {
+                            String area = distribution.getArea();
+                            COLDPRegion region = icl.getRegion();
+                            if (region != null && (area == null || !area.equals(region.getID()))
+                                && icl.getConfirmation("Use currently selected region " + region.toReferenceString() + "?")) {
+                                distribution.setRegion(region);
+                            }
+                            String taxonID = distribution.getTaxonID();
+                            COLDPTaxon taxon = icl.getTaxon();
+                            if (taxon != null && (taxonID == null || !taxonID.equals(taxon.getID()))
+                                && icl.getConfirmation("Use currently selected taxon " + taxon.toReferenceString() + "?")) {
+                                distribution.setTaxon(taxon);
+                            }
+                            String referenceID = distribution.getReferenceID();
+                            reference = icl.getReference();
+                            if (reference != null) {
+                                if (referenceID == null || !referenceID.equals(reference.getID())
+                                    && icl.getConfirmation("Use currently selected reference " 
+                                            + reference.toReferenceString(25, 40) + "?")) {
+                                    distribution.setReference(reference);
+                                }
+                            } else {
+                                if (referenceID != null && reference == null
+                                    && icl.getConfirmation("Remove reference from record " 
+                                            + distribution.getReference().toReferenceString(25, 40) + "?")) {
+                                    distribution.setReference(null);
+                                }
+                            }
+                            distribution.setGazetteer(icl.readLine("Gazetteer", distribution.getGazetteer(), false));
+                            distribution.setStatus(icl.readLine("Status", distribution.getStatus(), false));
+                            distribution.setRemarks(icl.readLine("Remarks", distribution.getRemarks(), false));
+                        }
+                        break;
+                    case "d+":
+                        if (icl.getTaxon() != null && icl.getRegion() != null) {
+                            icl.addDistribution(coldp, null, null, null, null);
+                        }
+                        break;
+                    case "d*a":
+                        if (icl.getTaxon() != null && line != null) {
+                            String[] tokens = line.split(",");
+                            boolean first = true;
+                            String gazetteer = null;
+                            String status = null;
+                            String remarks = null;
+                            for (String token : tokens) {
+                                COLDPRegion region = icl.findRegion(token.trim(), coldp);
+                                if (region == null) {
+                                    icl.showError("Could not find region for " + token);
+                                } else {
+                                    if (first) {
+                                        gazetteer = icl.readLine("Gazetteer", "iso",
+                                            "(tdwg)|(iso)|(fao)|(longhurst)|(teow)|(iho)|(text)", 
+                                            false);
+                                        status = icl.readLine("Status", "native",
+                                            "(native)|(domesticated)|(alien)|(uncertain)", 
+                                            false);
+                                        remarks = icl.readLine("Remarks", "", 
+                                                false);
+                                        first = false;
+                                    }
+                                    icl.addDistribution(coldp, region, gazetteer, status, remarks);
+                                }
+                            }                                
+                        }
+                        break;
+
                 }
             }
         }
@@ -219,7 +320,7 @@ public class InteractiveCommandLine {
     
     public InteractiveCommandLine() {
         try {
-            Terminal terminal = TerminalBuilder.builder().system(true)
+            terminal = TerminalBuilder.builder().system(true)
                     .nativeSignals(true)
                     .signalHandler(Terminal.SignalHandler.SIG_IGN)
                     .exec(true)
@@ -234,12 +335,12 @@ public class InteractiveCommandLine {
         }
     }
     
-    public String readLine(String guidance, String defaultText) {
+    public String readLine(String guidance, String defaultText, boolean showContext) {
         String line = null;
         
         if (lineReader != null) {
             try {
-                line = lineReader.readLine(preparePrompt(guidance), null, defaultText);
+                line = lineReader.readLine(showContext ? preparePrompt(guidance) : guidance + prompt, null, defaultText);
             } catch (UserInterruptException | EndOfFileException e) {
                 return null;
             }
@@ -254,13 +355,14 @@ public class InteractiveCommandLine {
         
         return line;
     }
-        public String readLine(String guidance, String defaultText, String pattern) {
+    
+    public String readLine(String guidance, String defaultText, String pattern, boolean showContext) {
         String line = null;
         
         if (lineReader != null) {
             try {
                 do {
-                    line = lineReader.readLine(preparePrompt(guidance), null, defaultText);
+                    line = lineReader.readLine(showContext ? preparePrompt(guidance) : guidance + prompt, null, defaultText);
                     line = line.trim();
                 } while (!line.matches(pattern));
             } catch (UserInterruptException | EndOfFileException e) {
@@ -269,6 +371,24 @@ public class InteractiveCommandLine {
         }
         
         return line;
+    }
+    
+    public boolean getConfirmation(String question) {
+        return getConfirmation(question, true);
+    }
+
+    public boolean getConfirmation(String question, boolean defaultToNo) {
+        Boolean response = null;
+        while (response == null) {
+            String line = readLine(question + " [Y/N]", defaultToNo ? "N" : "Y", false).trim().toUpperCase();
+            if (line.equals("Y")) {
+                response = Boolean.TRUE;
+            } else if (line.equals("N")) {
+                response = Boolean.FALSE;
+            }
+        }
+        
+        return response.booleanValue();
     }
     
     public int selectFromList(String[] list) {
@@ -305,6 +425,161 @@ public class InteractiveCommandLine {
         return selection;
     }
     
+    private COLDPReference findReference(String line, COLDataPackage coldp) {
+        COLDPReference reference = null;
+        
+        if (line != null) {
+            reference = coldp.getReferences().get(line); 
+            if (reference == null) {
+                final String filter = line;
+                List<COLDPReference> references = coldp.getReferences().values()
+                        .stream()
+                        .filter(r -> r.toReferenceString().contains(filter))
+                        .collect(Collectors.toList());
+                int count = references.size();
+                if (count == 1) {
+                    reference = references.get(0);
+                } else if (count > 1) {
+                    String[] items = new String[count];
+                    int i = 0;
+                    for (COLDPReference r : references) {
+                        items[i++] =  r.toReferenceString();
+                    }
+                    int selection = selectFromList(items);
+                    if (selection >= 0) {
+                        reference = references.get(selection);
+                    }
+                }
+            }
+        } 
+        return reference;
+    }
+
+    private COLDPRegion findRegion(String filter, COLDataPackage coldp) {
+        // Look first for exact match as key
+        COLDPRegion region = coldp.getRegions().get(filter);
+
+        // Now hunt for matches
+        if (region == null) {
+            List<COLDPRegion> regions =
+                coldp.getRegions().values()
+                    .stream()
+                    .filter(r -> r.toReferenceString().contains(filter))
+                    .collect(Collectors.toList());
+            if (regions.size() == 1) {
+                region = regions.get(0);
+            } else if (regions.size() > 1) {
+                String[] items = new String[regions.size()];
+                int i = 0;
+                for (COLDPRegion r : regions) {
+                    items[i++] = r.toReferenceString();
+                }
+                int selection = selectFromList(items);
+                if (selection >= 0) {
+                    region = regions.get(selection);
+                }
+            }
+        }
+        
+        return region;
+    }
+        
+    private COLDPDistribution addDistribution(COLDataPackage coldp, COLDPRegion region,
+                        String gazetteer, String status, String remarks) {
+        // First check for a distribution record with the same value for the reference
+        COLDPDistribution distribution = null;
+        if (region == null) {
+            region = this.region;
+        }
+        List<COLDPDistribution> distributions 
+                = coldp.findDistributions(Optional.of(taxon), 
+                                          Optional.of(region), 
+                                          (reference == null) ? Optional.empty() : Optional.of(reference));
+
+        String promptForExisting = null;
+        String promptForNew = null;
+        // Then - if a reference is set - look explicitly for a distribution with no reference
+        // Or - if no reference is set - look for any existing distribution records
+        boolean requireVerification = false;
+        if (distributions.size() > 0) {
+            promptForExisting = "Use existing distribution record";
+            promptForNew = "Create new distribution record for reference";
+        } else {
+            requireVerification = true;
+            if (reference != null) {
+                distributions = coldp.findDistributions(Optional.of(taxon), 
+                                              Optional.of(region),
+                                              Optional.empty());
+                promptForExisting = "Add reference to existing distribution record";
+                promptForNew = "Create new distribution record for reference";
+            } else {
+                distributions = coldp.findDistributions(Optional.of(taxon), 
+                                              Optional.of(region),
+                                              null);
+                promptForExisting = "Edit existing distribution record with reference";
+                promptForNew = "Create new distribution record without reference";
+            }
+        }
+        if (!requireVerification && distributions.size() == 1) {
+            distribution = distributions.get(0);
+        } else if (distributions.size() != 0) {
+            String[] choices = new String[distributions.size() + 1];
+            int index = 0;
+            for (index = 0; index < distributions.size(); index++) {
+                choices[index] = promptForExisting + " "
+                        + distributions.get(index).toReferenceString();
+            }
+            choices[index] = promptForNew;
+
+            int choice = selectFromList(choices);
+            if (choice >= 0 && choice < distributions.size()) {
+                distribution = distributions.get(choice);                                            
+            } else if (choice != distributions.size()) {
+                // User does not want to proceed
+                return null;
+            }
+        }
+        if (distribution == null) {
+            distribution = coldp.newDistribution();
+            distribution.setTaxon(taxon);
+            distribution.setRegion(region);
+        } 
+        if (distribution.getReference() == null) {
+            distribution.setReference(reference);
+        }
+        if (gazetteer == null) {
+            distribution.setGazetteer(readLine("Gazetteer", 
+                    (distribution.getGazetteer() == null) ? "iso" : distribution.getGazetteer(),
+                    "(tdwg)|(iso)|(fao)|(longhurst)|(teow)|(iho)|(text)", false));
+        } else {
+            distribution.setGazetteer(gazetteer);
+        }
+        if (status == null) {
+            distribution.setStatus(readLine("Status", 
+                    (distribution.getStatus() == null) ? "native" : distribution.getStatus(), 
+                    "(native)|(domesticated)|(alien)|(uncertain)", false));
+        } else {
+            distribution.setStatus(status);
+        }
+        if (remarks == null) {
+            distribution.setRemarks(readLine("Remarks", distribution.getRemarks(), false));
+        } else {
+            distribution.setRemarks(remarks);
+        }
+
+        setDistribution(distribution);
+        
+        return distribution;
+    }
+
+    private void showError(String s) {
+        AttributedStringBuilder asb = new AttributedStringBuilder();
+        asb.style(AttributedStyle.DEFAULT.background(AttributedStyle.RED).foreground(AttributedStyle.WHITE))
+           .append(s + "\n")
+           .style(AttributedStyle.DEFAULT);
+        terminal.writer().write(asb.toAnsi());
+    }
+    
     private String preparePrompt(String guidance) {
         AttributedStringBuilder asb = new AttributedStringBuilder();
         if(taxon != null) {
@@ -325,7 +600,7 @@ public class InteractiveCommandLine {
         }
         if(reference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("Ref: " + reference.toReferenceString() + "\n");
+               .append("Ref: " + reference.toReferenceString(25, 40) + "\n");
         }
         if(nameReference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))

@@ -49,13 +49,15 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     }
 
     public void setName(COLDPName name) {
-        if (this.name != null) {
-            this.name.deregisterNameReference(this);
-        }
-        this.name = name;
-        nameID = null;
-        if (name != null) {
-            name.registerNameReference(this);
+        if (!Objects.equals(this.name, name)) {
+            if (this.name != null) {
+                this.name.deregisterNameReference(this);
+            }
+            this.name = name;
+            nameID = null;
+            if (name != null) {
+                name.registerNameReference(this);
+            }
         }
     }
 
@@ -76,13 +78,15 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            this.reference.deregisterNameReference(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerNameReference(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                this.reference.deregisterNameReference(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerNameReference(this);
+            }
         }
     }
 

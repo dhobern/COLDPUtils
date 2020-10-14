@@ -83,21 +83,23 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public void setParent(COLDPTaxon parent) {
-        if (name != null 
-                && parent != null 
-                && parent.getName() != null
-                && name.getRankEnum().ordinal() <= parent.getName().getRankEnum().ordinal()) {
-            LOG.error("Cannot only set higher-ranked taxon as parent");
-        }
+        if (!Objects.equals(this.parent, parent)) {
+            if (name != null 
+                    && parent != null 
+                    && parent.getName() != null
+                    && name.getRankEnum().ordinal() <= parent.getName().getRankEnum().ordinal()) {
+                LOG.error("Cannot only set higher-ranked taxon as parent");
+            }
 
-        if (this.parent != null) {
-            this.parent.deregisterChild(this);
+            if (this.parent != null) {
+                this.parent.deregisterChild(this);
+            }
+            this.parent = parent;
+            parentID = null;
+            if (parent != null) {
+                parent.registerChild(this);
+           }
         }
-        this.parent = parent;
-        parentID = null;
-        if (parent != null) {
-            parent.registerChild(this);
-       }
     }
     
     public void fixHierarchy() {
@@ -224,10 +226,12 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public void setName(COLDPName name) {
-        this.name = name;
-        nameID = null;
-        if (name != null) {
-            name.setTaxon(this);
+        if (!Objects.equals(this.name, name)) {
+            this.name = name;
+            nameID = null;
+            if (name != null) {
+                name.setTaxon(this);
+            }
         }
     }
 
@@ -264,13 +268,15 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            this.reference.deregisterTaxon(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerTaxon(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                this.reference.deregisterTaxon(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerTaxon(this);
+            }
         }
     }
 

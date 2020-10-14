@@ -52,13 +52,15 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
 
     public void setTaxon(COLDPTaxon taxon) {
-        if (this.taxon != null) {
-            taxon.deregisterDistribution(this);
-        }
-        this.taxon = taxon;
-        taxonID = null;
-        if (taxon != null) {
-            taxon.registerDistribution(this);
+        if (!Objects.equals(this.taxon, taxon)) {
+            if (this.taxon != null) {
+                taxon.deregisterDistribution(this);
+            }
+            this.taxon = taxon;
+            taxonID = null;
+            if (taxon != null) {
+                taxon.registerDistribution(this);
+            }
         }
     }
 
@@ -79,13 +81,15 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
 
     public void setRegion(COLDPRegion region) {
-        if (this.region != null) {
-            taxon.deregisterDistribution(this);
-        }
-        this.region = region;
-        area = null;
-        if (region != null) {
-            region.registerDistribution(this);
+        if (!Objects.equals(this.region, region)) {
+            if (this.region != null) {
+                taxon.deregisterDistribution(this);
+            }
+            this.region = region;
+            area = null;
+            if (region != null) {
+                region.registerDistribution(this);
+            }
         }
     }
 
@@ -122,13 +126,15 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            this.reference.deregisterDistribution(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerDistribution(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                this.reference.deregisterDistribution(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerDistribution(this);
+            }
         }
     }
 
@@ -187,7 +193,8 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     }
 
     public String toReferenceString() {
-        return "[" + taxon.toReferenceString() + "] in [" + region.toReferenceString() + "]";
+        return "[" + taxon.toReferenceString() + "] " + status + " in [" + region.toReferenceString() + "]"
+                + (reference == null ? "" : " from [" + reference.toReferenceString(15, 0) + "]");
     }
 
     @Override

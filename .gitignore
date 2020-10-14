@@ -5,3 +5,5 @@ target/
 Alucitoidea/
 Pterophoroidea/
 mockdata/*NEW.csv
+mockdata/*JUNK.csv
+mockdata*.zip

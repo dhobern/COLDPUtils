@@ -50,13 +50,15 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     }
 
     public void setTaxon(COLDPTaxon taxon) {
-        if (this.taxon != null) {
-            taxon.deregisterSynonym(this);
-        }
-        taxonID = null;
-        this.taxon = taxon;
-        if (taxon != null) {
-            taxon.registerSynonym(this);
+        if (!Objects.equals(this.taxon, taxon)) {
+            if (this.taxon != null) {
+                taxon.deregisterSynonym(this);
+            }
+            taxonID = null;
+            this.taxon = taxon;
+            if (taxon != null) {
+                taxon.registerSynonym(this);
+            }
         }
     }
 
@@ -77,13 +79,15 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     }
 
     public void setName(COLDPName name) {
-        if (this.name != null) {
-            name.deregisterSynonym(this);
-        }
-        this.name = name;
-        nameID = null;
-        if (name != null) {
-            name.registerSynonym(this);
+        if (!Objects.equals(this.name, name)) {
+            if (this.name != null) {
+                name.deregisterSynonym(this);
+            }
+            this.name = name;
+            nameID = null;
+            if (name != null) {
+                name.registerSynonym(this);
+            }
         }
     }
 
@@ -112,13 +116,15 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     }
 
     public void setReference(COLDPReference reference) {
-        if (this.reference != null) {
-            reference.deregisterSynonym(this);
-        }
-        this.reference = reference;
-        referenceID = null;
-        if (reference != null) {
-            reference.registerSynonym(this);
+        if (!Objects.equals(this.reference, reference)) {
+            if (this.reference != null) {
+                reference.deregisterSynonym(this);
+            }
+            this.reference = reference;
+            referenceID = null;
+            if (reference != null) {
+                reference.registerSynonym(this);
+            }
         }
     }
 
