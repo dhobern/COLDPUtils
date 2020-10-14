@@ -802,9 +802,11 @@ public class COLDPTool {
                 .addOption("v", "verbose", false, "Verbose")
                 .addOption("S", "suffix", true, 
                            "Suffix to file names when printing to CSV,"
-                                   + "defaults to \"-NEW\" - replace with "
-                                   + "care to avoid overwriting source CSV "
-                                   + "files")
+                                   + "defaults to \"-NEW\" - a value of \"-\" "
+                                   + "disables the suffix and causes files to "
+                                   + "share the same names as originals - "
+                                   + "replace with care to avoid overwriting "
+                                   + "source CSV files")
                 .addOption("i", "identifier-type", true, 
                            "Current identifier type for Taxon, Name and "
                                    + "Reference records - one of Int, UUID and "
