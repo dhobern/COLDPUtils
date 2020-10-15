@@ -71,7 +71,7 @@ public enum RankEnum {
         return this.ordinal() > species.ordinal();
     }
     
-    public String getRankName() {
+    public String toString() {
         return (this == clazz ? "class" : name());
     }
 }

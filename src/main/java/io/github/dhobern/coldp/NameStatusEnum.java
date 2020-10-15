@@ -43,4 +43,8 @@ public enum NameStatusEnum {
     public String getStatus() {
         return status;
     }
+    
+    public String toString() {
+        return status;
+    }
 }

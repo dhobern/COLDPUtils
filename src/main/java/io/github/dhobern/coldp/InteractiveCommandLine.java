@@ -17,6 +17,7 @@ package io.github.dhobern.coldp;
 
 import static io.github.dhobern.utils.ZipUtils.zipFolder;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -115,7 +117,7 @@ public class InteractiveCommandLine {
                             }
                             name.setAuthorship(icl.readLine("Authorship", name.getAuthorship(), false));
                             RankEnum rank = icl.readEnum(RankEnum.class, "Rank", name.getRank(), false);
-                            name.setRank(rank.getRankName());
+                            name.setRank(rank.toString());
                             if (rank.isUninomial()) {
                                 name.setUninomial(icl.readLine("Uninomial", name.getUninomial(), false));
                                 name.setScientificName(name.getUninomial());
@@ -136,7 +138,7 @@ public class InteractiveCommandLine {
                                 name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
                             }
                             name.setPublishedInPage(icl.readLine("Published in page", name.getPublishedInPage(), false));
-                            name.setPublishedInYear(icl.readLine("Published in year", name.getPublishedInYear(), "^[1-2][0-9]{3}$", false));
+                            name.setPublishedInYear(icl.readLine("Published in year", name.getPublishedInYear(), "^([1-2][0-9]{3})?$", false));
                             name.setCode(icl.readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
                             name.setStatus(icl.readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
                             name.setRemarks(icl.readLine("Remarks", name.getRemarks(), false));
@@ -430,13 +432,21 @@ public class InteractiveCommandLine {
             String guidance, String defaultText, boolean showContext) {
         T enumValue = null;
         
+        try {
+            enumValue = Enum.valueOf(enumType, 
+                    readLine(guidance, defaultText, showContext));
+        } catch(Exception e) {
+            // Ignore and try selection
+        }
         while (enumValue == null) {
-            try {
-                enumValue = Enum.valueOf(enumType, 
-                        readLine(guidance, defaultText, showContext));
-                showContext = false;
-            } catch(Exception e) {
-                // Just loop ...
+            T[] constants = enumType.getEnumConstants();
+            List<String> names = Stream.of(constants)
+                            .map(e -> e.toString())
+                            .collect(Collectors.toList());
+            String[] enumNames = names.toArray(new String[names.size()]);
+            int selection = selectFromList(enumNames);
+            if (selection >= 0 && selection < constants.length) {
+               enumValue = constants[selection];
             }
         }
         

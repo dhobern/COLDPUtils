@@ -116,7 +116,7 @@ public class COLDataPackage {
             LOG.error("Name " + scientificName + " already exists [" + name.getID() + "]");
         } else {
             name = newName();
-            name.setRank(rankEnum.getRankName());
+            name.setRank(rankEnum.toString());
             name.setScientificName(scientificName);
             if (rankEnum.isUninomial()) {
                 name.setUninomial(uninomialOrGenus);
