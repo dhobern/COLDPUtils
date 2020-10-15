@@ -227,9 +227,9 @@ public class COLDataPackage {
     public List<COLDPDistribution> findDistributions(Optional<COLDPTaxon> taxon,
             Optional<COLDPRegion> region, Optional<COLDPReference> reference) {
         return distributions.stream().filter(d -> {
-            if (taxon != null && !Objects.equals(taxon.orElse(null), d.getTaxon())) return false;
-            if (region != null && !Objects.equals(region.orElse(null), d.getRegion())) return false;
-            if (reference != null && !Objects.equals(reference.orElse(null), d.getReference())) return false;
+            if (taxon != null && !taxon.equals(Optional.ofNullable(d.getTaxon()))) return false;
+            if (region != null && !region.equals(Optional.ofNullable(d.getRegion()))) return false;
+            if (reference != null && !reference.equals(Optional.ofNullable(d.getReference()))) return false;
             return true;
         }).collect(Collectors.toList());
     }

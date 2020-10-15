@@ -492,9 +492,9 @@ public class InteractiveCommandLine {
             region = this.region;
         }
         List<COLDPDistribution> distributions 
-                = coldp.findDistributions(Optional.of(taxon), 
-                                          Optional.of(region), 
-                                          (reference == null) ? Optional.empty() : Optional.of(reference));
+                = coldp.findDistributions(Optional.ofNullable(taxon), 
+                                          Optional.ofNullable(region), 
+                                          Optional.ofNullable(reference));
 
         String promptForExisting = null;
         String promptForNew = null;
@@ -507,14 +507,14 @@ public class InteractiveCommandLine {
         } else {
             requireVerification = true;
             if (reference != null) {
-                distributions = coldp.findDistributions(Optional.of(taxon), 
-                                              Optional.of(region),
+                distributions = coldp.findDistributions(Optional.ofNullable(taxon), 
+                                              Optional.ofNullable(region),
                                               Optional.empty());
                 promptForExisting = "Add reference to existing distribution record";
                 promptForNew = "Create new distribution record for reference";
             } else {
-                distributions = coldp.findDistributions(Optional.of(taxon), 
-                                              Optional.of(region),
+                distributions = coldp.findDistributions(Optional.ofNullable(taxon), 
+                                              Optional.ofNullable(region),
                                               null);
                 promptForExisting = "Edit existing distribution record with reference";
                 promptForNew = "Create new distribution record without reference";
@@ -596,19 +596,19 @@ public class InteractiveCommandLine {
         }
         if(nameRelation != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("Rel: " + nameRelation.toReferenceString() + "\n");
+               .append("NN: " + nameRelation.toReferenceString() + "\n");
         }
         if(reference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("Ref: " + reference.toReferenceString(25, 40) + "\n");
+               .append("R: " + reference.toReferenceString(25, 40) + "\n");
         }
         if(nameReference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("NRef: " + nameReference.toReferenceString() + "\n");
+               .append("NR: " + nameReference.toReferenceString() + "\n");
         }
         if(region != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("Reg: " + region.toReferenceString() + "\n");
+               .append("A: " + region.toReferenceString() + "\n");
         }
         if(distribution != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
@@ -686,7 +686,6 @@ public class InteractiveCommandLine {
     public COLDPRegion getRegion() {
         return region;
     }
-
     
     public void clearContext() {
         taxon = null;
