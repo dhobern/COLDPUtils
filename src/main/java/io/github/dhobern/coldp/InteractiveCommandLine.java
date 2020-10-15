@@ -22,17 +22,14 @@ import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.reader.impl.DefaultHighlighter;
-import org.jline.reader.impl.LineReaderImpl;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import org.slf4j.Logger;
@@ -91,6 +88,62 @@ public class InteractiveCommandLine {
                 }
                 switch (words[0].toLowerCase()) {
                     case "n": icl.setName(line == null ? null : coldp.getNameByScientificName(line)); break;
+                    case "b": 
+                        if (icl.getName() != null) {
+                            icl.setName(icl.getName().getBasionym());
+                        }
+                        break;
+                    case "n/": 
+                        if (icl.getName() != null) {
+                            COLDPName name = icl.getName();
+                            COLDPReference reference = icl.getReference();
+                            if (reference != null 
+                                    && (name.getReference() == null || !name.getReference().equals(reference))
+                                    && icl.getConfirmation("Use currently selected reference " + reference.toReferenceString(25, 40) + "?")) {
+                                name.setReference(reference);
+                            }
+                            COLDPName basionym = name.getBasionym();
+                            if (    (basionym == null && icl.getConfirmation("Select basionym?"))
+                                 || (basionym != null && icl.getConfirmation("Replace current basionym " + basionym.toReferenceString() + "?"))) {
+                                String nameString = icl.readLine("Basionym", "", false);
+                                if (nameString != null && nameString.length() > 0) {
+                                    basionym = icl.findName(nameString, coldp);
+                                    if (basionym != null) {
+                                        name.setBasionym(basionym);
+                                    }
+                                }
+                            }
+                            name.setAuthorship(icl.readLine("Authorship", name.getAuthorship(), false));
+                            RankEnum rank = icl.readEnum(RankEnum.class, "Rank", name.getRank(), false);
+                            name.setRank(rank.getRankName());
+                            if (rank.isUninomial()) {
+                                name.setUninomial(icl.readLine("Uninomial", name.getUninomial(), false));
+                                name.setScientificName(name.getUninomial());
+                                name.setGenus(null);
+                                name.setSpecificEpithet(null);
+                                name.setInfraspecificEpithet(null);
+                            } else {
+                                name.setUninomial(null);
+                                String genus = icl.readLine("Genus", name.getGenus(), false);
+                                name.setGenus(genus);
+                                String specificEpithet = icl.readLine("Specific epithet", name.getSpecificEpithet(), false);
+                                name.setSpecificEpithet(specificEpithet);
+                                String infraspecificEpithet = null;
+                                if (rank.isInfraspecific()) {
+                                    infraspecificEpithet = icl.readLine("Infraspecific epithet", name.getInfraspecificEpithet(), false);
+                                    name.setInfraspecificEpithet(infraspecificEpithet);
+                                }
+                                name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
+                            }
+                            name.setPublishedInPage(icl.readLine("Published in page", name.getPublishedInPage(), false));
+                            name.setPublishedInYear(icl.readLine("Published in year", name.getPublishedInYear(), "^[1-2][0-9]{3}$", false));
+                            name.setCode(icl.readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
+                            name.setStatus(icl.readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
+                            name.setRemarks(icl.readLine("Remarks", name.getRemarks(), false));
+                            name.setLink(icl.readLine("Link", name.getLink(), false));
+                        }
+                        break;
+                        
                     case "t": icl.setTaxon(line == null ? null : coldp.getTaxonByScientificName(line)); break;
                     case "a": icl.setRegion(line == null ? null : icl.findRegion(line, coldp)); break;
                     case "nr": 
@@ -347,7 +400,7 @@ public class InteractiveCommandLine {
 
             line = line.trim();
 
-            if (line.equalsIgnoreCase("quit") || line.equalsIgnoreCase("exit"))
+            if (line.equalsIgnoreCase("q") || line.equalsIgnoreCase("quit") || line.equalsIgnoreCase("exit"))
             {
                 line = null;
             }
@@ -371,6 +424,23 @@ public class InteractiveCommandLine {
         }
         
         return line;
+    }
+    
+    public <T extends Enum<T>> T readEnum(Class<T> enumType, 
+            String guidance, String defaultText, boolean showContext) {
+        T enumValue = null;
+        
+        while (enumValue == null) {
+            try {
+                enumValue = Enum.valueOf(enumType, 
+                        readLine(guidance, defaultText, showContext));
+                showContext = false;
+            } catch(Exception e) {
+                // Just loop ...
+            }
+        }
+        
+        return enumValue;
     }
     
     public boolean getConfirmation(String question) {
@@ -454,34 +524,64 @@ public class InteractiveCommandLine {
         } 
         return reference;
     }
+    
+    private COLDPName findName(String line, COLDataPackage coldp) {
+        COLDPName name = null;
+        
+        if (line != null) {
+            name = coldp.getNames().get(line); 
+            if (name == null) {
+                final String filter = line;
+                List<COLDPName> names = coldp.getNames().values()
+                        .stream()
+                        .filter(r -> r.toReferenceString().contains(filter))
+                        .collect(Collectors.toList());
+                int count = names.size();
+                if (count == 1) {
+                    name = names.get(0);
+                } else if (count > 1) {
+                    String[] items = new String[count];
+                    int i = 0;
+                    for (COLDPName r : names) {
+                        items[i++] =  r.toReferenceString();
+                    }
+                    int selection = selectFromList(items);
+                    if (selection >= 0) {
+                        name = names.get(selection);
+                    }
+                }
+            }
+        } 
+        return name;
+    }
 
     private COLDPRegion findRegion(String filter, COLDataPackage coldp) {
         // Look first for exact match as key
-        COLDPRegion region = coldp.getRegions().get(filter);
+        COLDPRegion name = coldp.getRegions().get(filter);
 
         // Now hunt for matches
-        if (region == null) {
-            List<COLDPRegion> regions =
+        if (name == null) {
+            List<COLDPRegion> names =
                 coldp.getRegions().values()
                     .stream()
                     .filter(r -> r.toReferenceString().contains(filter))
                     .collect(Collectors.toList());
-            if (regions.size() == 1) {
-                region = regions.get(0);
-            } else if (regions.size() > 1) {
-                String[] items = new String[regions.size()];
+            if (names.size() == 1) {
+                name = names.get(0);
+            } else if (names.size() > 1) {
+                String[] items = new String[names.size()];
                 int i = 0;
-                for (COLDPRegion r : regions) {
+                for (COLDPRegion r : names) {
                     items[i++] = r.toReferenceString();
                 }
                 int selection = selectFromList(items);
                 if (selection >= 0) {
-                    region = regions.get(selection);
+                    name = names.get(selection);
                 }
             }
         }
         
-        return region;
+        return name;
     }
         
     private COLDPDistribution addDistribution(COLDataPackage coldp, COLDPRegion region,
