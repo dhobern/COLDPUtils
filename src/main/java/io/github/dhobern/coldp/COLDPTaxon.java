@@ -614,10 +614,6 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
     @Override
     public String toString() {
-        return "COLDPTaxon{" + "ID=" + ID + ", parentID=" + parentID + ", nameID=" + nameID + ", referenceID=" + referenceID + ", kingdom=" + kingdom + ", phylum=" + phylum + ", clazz=" + clazz + ", order=" + order + ", superfamily=" + superfamily + ", family=" + family + ", subfamily=" + subfamily + ", tribe=" + tribe + ", genus=" + genus + ", species=" + species + ", remarks=" + remarks + '}';
-    }
-
-    public String toReferenceString() {
-        return ID + " " + name.toReferenceString();
+        return ID + " " + name.toString();
     }
 }

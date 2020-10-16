@@ -19,59 +19,8 @@ package io.github.dhobern.coldp;
  *
  * @author dhobern@gmail.com
  */
-public enum RankEnum {
+public enum GazetteerEnum {
     
-    none(true, false, null),
-    unknown(true, false, null),
-    kingdom(true, false, null),
-    phylum(true, false, null),
-    clazz(true, false, null),
-    order(true, false, null),
-    superfamily(true, false, null),
-    family(true, false, null),
-    subfamily(true, false, null),
-    tribe(true, false, null),
-    genus(true, false, null),
-    species(false, false, null),
-    subspecies(false, true, null),
-    variety(false, true, "var."),
-    form(false, true, "f."),
-    aberration(false, true, "ab.");
+    tdwg, iso, fao, longhurst, teow, iho, text;
     
-    private RankEnum() {
-    }
-    
-    private boolean uninomial;
-    private boolean infraspecific;
-    private String infraspecificMarker;
-    
-    RankEnum(boolean uninomial, boolean infraspecific, String infraspecificMarker) {
-        this.uninomial = uninomial;
-        this.infraspecific = infraspecific;
-        this.infraspecificMarker = infraspecificMarker;
-    }
-
-    public boolean isUninomial() {
-        return uninomial;
-    }
-
-    public boolean isInfraspecific() {
-        return infraspecific;
-    }
-
-    public String getInfraspecificMarker() {
-        return infraspecificMarker;
-    }
-    
-    public boolean inSpeciesGroup() {
-        return this.ordinal() >= species.ordinal();
-    }
-    
-    public boolean infraspecific() {
-        return this.ordinal() > species.ordinal();
-    }
-    
-    public String toString() {
-        return (this == clazz ? "class" : name());
-    }
 }

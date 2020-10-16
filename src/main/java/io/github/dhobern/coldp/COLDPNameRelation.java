@@ -178,11 +178,7 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
 
     @Override
     public String toString() {
-        return "CoLDPNameRelation{" + "nameID=" + getNameID() + ", relatedNameID=" + getRelatedNameID() + ", type=" + type + ", referenceID=" + getReferenceID() + ", remarks=" + remarks + '}';
-    }
-
-    public String toReferenceString() {
-        return "[" + name.toReferenceString() + "] " + type + " [" + relatedName.toReferenceString() + "]";
+        return "[" + name.toString() + "] " + type + " [" + relatedName.toString() + "]";
     }
     
     public String getSortString() {

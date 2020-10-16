@@ -443,10 +443,6 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     
     @Override
     public String toString() {
-        return "CoLDP_Name{" + "ID=" + ID + ", basionymID=" + getBasionymID() + ", scientificName=" + scientificName + ", authorship=" + authorship + ", rank=" + rank + ", uninomial=" + uninomial + ", genus=" + genus + ", specificEpithet=" + specificEpithet + ", infraspecificEpithet=" + infraspecificEpithet + ", referenceID=" + getReferenceID() + ", publishedInPage=" + publishedInPage + ", publishedInYear=" + publishedInYear + ", code=" + code + ", status=" + status + ", remarks=" + remarks + ", link=" + link + '}';
-    }
-    
-    public String toReferenceString() {
         return ID + " " + scientificName + " " + authorship;
     }
 

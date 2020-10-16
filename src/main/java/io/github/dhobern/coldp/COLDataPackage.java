@@ -6,7 +6,6 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.COLDPReference.BibliographicSort;
-import io.github.dhobern.coldp.COLDPTaxon.AlphabeticalSortByScientificName;
 import io.github.dhobern.coldp.IdentifierPolicy.IdentifierType;
 import io.github.dhobern.utils.CSVReader;
 import java.io.File;
@@ -20,7 +19,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -258,7 +256,7 @@ public class COLDataPackage {
             for (COLDPDistribution d : r.getDistributions()) {
                 d.setReference(null);
             }
-            references.remove(r);
+            references.remove(r.getID());
             return true;
         }
         
@@ -454,7 +452,7 @@ public class COLDataPackage {
         }
 
         List<COLDPTaxon> sortedTaxa = new ArrayList<>();
-        List<COLDPName> sortedNames = new ArrayList();
+        List<COLDPName> sortedNames = new ArrayList<>();
         
         List<COLDPTaxon> rootTaxa = getRootTaxa();
         

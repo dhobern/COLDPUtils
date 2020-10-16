@@ -156,11 +156,6 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
     }
 
     @Override
-    public String toString() {
-        return "CoLDPNameReference{" + "nameID=" + getNameID() + ", referenceID=" + getReferenceID() + ", page=" + page + ", link=" + link + ", remarks=" + remarks + '}';
-    }
-
-    @Override
     public int compareTo(COLDPNameReference o) {
         return this.toString().compareTo(o.toString());
     }
@@ -174,8 +169,9 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
                                     page, link, remarks);
     }
 
-    public String toReferenceString() {
-        return "[" + name.toReferenceString() + "] in [" + reference.toReferenceString() + "]";
+    @Override
+    public String toString() {
+        return "[" + name.toString() + "] in [" + reference.toString() + "]";
     }
 
     @Override

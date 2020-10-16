@@ -96,7 +96,7 @@ public class COLDPRegion {
         return StringUtils.buildCSV(ID, name);
     }
     
-    public String toReferenceString() {
+    public String toString() {
         return  ID + " " + name;
     }
 }

@@ -179,13 +179,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
 
     @Override
     public String toString() {
-        return "CoLDPSynonym{" + "taxonID=" + getTaxonID() + ", nameID=" + getNameID()
-                + ", status=" + status + ", referenceID=" + getReferenceID ()
-                + ", remarks=" + remarks + '}';
-    }
-
-    public String toReferenceString() {
-        return "[" + taxon.toReferenceString() + "] has synonym [" + name.toReferenceString() + "]";
+        return "[" + taxon.toString() + "] has synonym [" + name.toString() + "]";
     }
 
     public String getSortString() {

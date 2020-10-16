@@ -23,7 +23,9 @@ import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,7 +91,9 @@ public class InteractiveCommandLine {
                     line = null;
                 }
                 switch (words[0].toLowerCase()) {
-                    case "n": icl.setName(line == null ? null : coldp.getNameByScientificName(line)); break;
+                    case "n": 
+                        icl.setName(icl.findInstance(line, coldp.getNames(), coldp.getNames().values()));
+                        break;
                     case "b": 
                         if (icl.getName() != null) {
                             icl.setName(icl.getName().getBasionym());
@@ -101,15 +105,15 @@ public class InteractiveCommandLine {
                             COLDPReference reference = icl.getReference();
                             if (reference != null 
                                     && (name.getReference() == null || !name.getReference().equals(reference))
-                                    && icl.getConfirmation("Use currently selected reference " + reference.toReferenceString(25, 40) + "?")) {
+                                    && icl.getConfirmation("Use currently selected reference " + reference.toString(25, 40) + "?")) {
                                 name.setReference(reference);
                             }
                             COLDPName basionym = name.getBasionym();
                             if (    (basionym == null && icl.getConfirmation("Select basionym?"))
-                                 || (basionym != null && icl.getConfirmation("Replace current basionym " + basionym.toReferenceString() + "?"))) {
+                                 || (basionym != null && icl.getConfirmation("Replace current basionym " + basionym.toString() + "?"))) {
                                 String nameString = icl.readLine("Basionym", "", false);
                                 if (nameString != null && nameString.length() > 0) {
-                                    basionym = icl.findName(nameString, coldp);
+                                    basionym = icl.findInstance(nameString, coldp.getNames(), coldp.getNames().values());
                                     if (basionym != null) {
                                         name.setBasionym(basionym);
                                     }
@@ -146,8 +150,12 @@ public class InteractiveCommandLine {
                         }
                         break;
                         
-                    case "t": icl.setTaxon(line == null ? null : coldp.getTaxonByScientificName(line)); break;
-                    case "a": icl.setRegion(line == null ? null : icl.findRegion(line, coldp)); break;
+                    case "t": 
+                        icl.setTaxon(icl.findInstance(line, coldp.getTaxa(), coldp.getTaxa().values()));
+                        break;
+                    case "a": 
+                        icl.setRegion(icl.findInstance(line, coldp.getRegions(), coldp.getRegions().values()));
+                        break;
                     case "nr": 
                         int index = Integer.parseInt(line);
                         icl.setNameReference(
@@ -207,7 +215,7 @@ public class InteractiveCommandLine {
                                 children = icl.getTaxon()
                                         .getChildrenSorted()
                                         .stream()
-                                        .filter(c -> c.toReferenceString().contains(filter))
+                                        .filter(c -> c.toString().contains(filter))
                                         .collect(Collectors.toList());
                             } else {
                                 children = new ArrayList<>(icl.getTaxon().getChildrenSorted());
@@ -219,7 +227,7 @@ public class InteractiveCommandLine {
                                 String[] items = new String[count];
                                 i = 0;
                                 for (COLDPTaxon c : children) {
-                                    items[i++] =  c.toReferenceString();
+                                    items[i++] =  c.toString();
                                 }
                                 int selection = icl.selectFromList(items);
                                 if (selection >= 0) {
@@ -229,7 +237,7 @@ public class InteractiveCommandLine {
                         } 
                         break;
                     case "r": 
-                        icl.setReference(icl.findReference(line, coldp));
+                        icl.setReference(icl.findInstance(line, coldp.getReferences(), coldp.getReferences().values()));
                         break;
                     case "r+":
                         String author = icl.readLine("Author", "", false);
@@ -262,7 +270,7 @@ public class InteractiveCommandLine {
                         break;
                     case "r-":
                         reference = icl.getReference();
-                        if (reference != null && icl.getConfirmation("Delete reference " + reference.toReferenceString(25, 40) + "?")) {
+                        if (reference != null && icl.getConfirmation("Delete reference " + reference.toString(25, 40) + "?")) {
                             icl.setReference(null);
                             coldp.deleteReference(reference);
                         }
@@ -278,7 +286,7 @@ public class InteractiveCommandLine {
                                 distributions = icl.getTaxon()
                                         .getDistributions()
                                         .stream()
-                                        .filter(d -> d.toReferenceString().contains(filter))
+                                        .filter(d -> d.toString().contains(filter))
                                         .collect(Collectors.toList());
                             } else {
                                 distributions = new ArrayList<>(icl.getTaxon().getDistributions());
@@ -290,7 +298,7 @@ public class InteractiveCommandLine {
                                 String[] items = new String[count];
                                 i = 0;
                                 for (COLDPDistribution c : distributions) {
-                                    items[i++] =  c.toReferenceString();
+                                    items[i++] =  c.toString();
                                 }
                                 int selection = icl.selectFromList(items);
                                 if (selection >= 0) {
@@ -305,13 +313,13 @@ public class InteractiveCommandLine {
                             String area = distribution.getArea();
                             COLDPRegion region = icl.getRegion();
                             if (region != null && (area == null || !area.equals(region.getID()))
-                                && icl.getConfirmation("Use currently selected region " + region.toReferenceString() + "?")) {
+                                && icl.getConfirmation("Use currently selected region " + region.toString() + "?")) {
                                 distribution.setRegion(region);
                             }
                             String taxonID = distribution.getTaxonID();
                             COLDPTaxon taxon = icl.getTaxon();
                             if (taxon != null && (taxonID == null || !taxonID.equals(taxon.getID()))
-                                && icl.getConfirmation("Use currently selected taxon " + taxon.toReferenceString() + "?")) {
+                                && icl.getConfirmation("Use currently selected taxon " + taxon.toString() + "?")) {
                                 distribution.setTaxon(taxon);
                             }
                             String referenceID = distribution.getReferenceID();
@@ -319,18 +327,18 @@ public class InteractiveCommandLine {
                             if (reference != null) {
                                 if (referenceID == null || !referenceID.equals(reference.getID())
                                     && icl.getConfirmation("Use currently selected reference " 
-                                            + reference.toReferenceString(25, 40) + "?")) {
+                                            + reference.toString(25, 40) + "?")) {
                                     distribution.setReference(reference);
                                 }
                             } else {
                                 if (referenceID != null && reference == null
                                     && icl.getConfirmation("Remove reference from record " 
-                                            + distribution.getReference().toReferenceString(25, 40) + "?")) {
+                                            + distribution.getReference().toString(25, 40) + "?")) {
                                     distribution.setReference(null);
                                 }
                             }
-                            distribution.setGazetteer(icl.readLine("Gazetteer", distribution.getGazetteer(), false));
-                            distribution.setStatus(icl.readLine("Status", distribution.getStatus(), false));
+                            distribution.setGazetteer(icl.readEnum(GazetteerEnum.class, "Gazetteer", distribution.getGazetteer(), false).toString());
+                            distribution.setStatus(icl.readEnum(DistributionStatusEnum.class, "Status", distribution.getStatus(), false).toString());
                             distribution.setRemarks(icl.readLine("Remarks", distribution.getRemarks(), false));
                         }
                         break;
@@ -347,7 +355,7 @@ public class InteractiveCommandLine {
                             String status = null;
                             String remarks = null;
                             for (String token : tokens) {
-                                COLDPRegion region = icl.findRegion(token.trim(), coldp);
+                                COLDPRegion region = icl.findInstance(token.trim(), coldp.getRegions(), coldp.getRegions().values());
                                 if (region == null) {
                                     icl.showError("Could not find region for " + token);
                                 } else {
@@ -433,15 +441,18 @@ public class InteractiveCommandLine {
         T enumValue = null;
         
         try {
-            enumValue = Enum.valueOf(enumType, 
-                    readLine(guidance, defaultText, showContext));
+            String line = readLine(guidance, defaultText, showContext);
+            if (line != null) {
+                line = processHardEnumCases(line);
+            }
+            enumValue = Enum.valueOf(enumType, line);
         } catch(Exception e) {
             // Ignore and try selection
         }
         while (enumValue == null) {
             T[] constants = enumType.getEnumConstants();
             List<String> names = Stream.of(constants)
-                            .map(e -> e.toString())
+                            .map(e ->e.toString())
                             .collect(Collectors.toList());
             String[] enumNames = names.toArray(new String[names.size()]);
             int selection = selectFromList(enumNames);
@@ -451,6 +462,14 @@ public class InteractiveCommandLine {
         }
         
         return enumValue;
+    }
+    
+    private static String processHardEnumCases(String s) {
+        switch(s) {
+            case "native": return "_native";
+            case "class" : return "clazz";
+        }
+        return s;
     }
     
     public boolean getConfirmation(String question) {
@@ -505,95 +524,42 @@ public class InteractiveCommandLine {
         return selection;
     }
     
-    private COLDPReference findReference(String line, COLDataPackage coldp) {
-        COLDPReference reference = null;
-        
-        if (line != null) {
-            reference = coldp.getReferences().get(line); 
-            if (reference == null) {
-                final String filter = line;
-                List<COLDPReference> references = coldp.getReferences().values()
-                        .stream()
-                        .filter(r -> r.toReferenceString().contains(filter))
-                        .collect(Collectors.toList());
-                int count = references.size();
-                if (count == 1) {
-                    reference = references.get(0);
-                } else if (count > 1) {
-                    String[] items = new String[count];
-                    int i = 0;
-                    for (COLDPReference r : references) {
-                        items[i++] =  r.toReferenceString();
-                    }
-                    int selection = selectFromList(items);
-                    if (selection >= 0) {
-                        reference = references.get(selection);
-                    }
-                }
-            }
-        } 
-        return reference;
-    }
+    private <T> T findInstance(String line, Map<String,T> map, Collection<T> instances) {
+        if (line == null) {
+            return null;
+        }
     
-    private COLDPName findName(String line, COLDataPackage coldp) {
-        COLDPName name = null;
+        T instance = null;
         
-        if (line != null) {
-            name = coldp.getNames().get(line); 
-            if (name == null) {
-                final String filter = line;
-                List<COLDPName> names = coldp.getNames().values()
-                        .stream()
-                        .filter(r -> r.toReferenceString().contains(filter))
-                        .collect(Collectors.toList());
-                int count = names.size();
-                if (count == 1) {
-                    name = names.get(0);
-                } else if (count > 1) {
-                    String[] items = new String[count];
-                    int i = 0;
-                    for (COLDPName r : names) {
-                        items[i++] =  r.toReferenceString();
-                    }
-                    int selection = selectFromList(items);
-                    if (selection >= 0) {
-                        name = names.get(selection);
-                    }
-                }
-            }
-        } 
-        return name;
-    }
-
-    private COLDPRegion findRegion(String filter, COLDataPackage coldp) {
-        // Look first for exact match as key
-        COLDPRegion name = coldp.getRegions().get(filter);
-
-        // Now hunt for matches
-        if (name == null) {
-            List<COLDPRegion> names =
-                coldp.getRegions().values()
+        if (map != null) {
+            instance = map.get(line);
+        }
+        
+        if (instance == null) {
+            final String filter = line;
+            List<T> matches = instances
                     .stream()
-                    .filter(r -> r.toReferenceString().contains(filter))
+                    .filter(r -> r.toString().contains(filter))
                     .collect(Collectors.toList());
-            if (names.size() == 1) {
-                name = names.get(0);
-            } else if (names.size() > 1) {
-                String[] items = new String[names.size()];
+            int count = matches.size();
+            if (count == 1) {
+                instance = matches.get(0);
+            } else if (count > 1) {
+                String[] items = new String[count];
                 int i = 0;
-                for (COLDPRegion r : names) {
-                    items[i++] = r.toReferenceString();
+                for (T m : matches) {
+                    items[i++] =  m.toString();
                 }
                 int selection = selectFromList(items);
                 if (selection >= 0) {
-                    name = names.get(selection);
+                    instance = matches.get(selection);
                 }
             }
         }
         
-        return name;
+        return instance;
     }
-        
+
     private COLDPDistribution addDistribution(COLDataPackage coldp, COLDPRegion region,
                         String gazetteer, String status, String remarks) {
         // First check for a distribution record with the same value for the reference
@@ -637,7 +603,7 @@ public class InteractiveCommandLine {
             int index = 0;
             for (index = 0; index < distributions.size(); index++) {
                 choices[index] = promptForExisting + " "
-                        + distributions.get(index).toReferenceString();
+                        + distributions.get(index).toString();
             }
             choices[index] = promptForNew;
 
@@ -651,23 +617,23 @@ public class InteractiveCommandLine {
         }
         if (distribution == null) {
             distribution = coldp.newDistribution();
-            distribution.setTaxon(taxon);
             distribution.setRegion(region);
+            distribution.setTaxon(taxon);
         } 
         if (distribution.getReference() == null) {
             distribution.setReference(reference);
         }
         if (gazetteer == null) {
-            distribution.setGazetteer(readLine("Gazetteer", 
+            distribution.setGazetteer(readEnum(GazetteerEnum.class, "Gazetteer", 
                     (distribution.getGazetteer() == null) ? "iso" : distribution.getGazetteer(),
-                    "(tdwg)|(iso)|(fao)|(longhurst)|(teow)|(iho)|(text)", false));
+                    false).toString());
         } else {
             distribution.setGazetteer(gazetteer);
         }
         if (status == null) {
-            distribution.setStatus(readLine("Status", 
+            distribution.setStatus(readEnum(DistributionStatusEnum.class, "Status", 
                     (distribution.getStatus() == null) ? "native" : distribution.getStatus(), 
-                    "(native)|(domesticated)|(alien)|(uncertain)", false));
+                    false).toString());
         } else {
             distribution.setStatus(status);
         }
@@ -694,35 +660,35 @@ public class InteractiveCommandLine {
         AttributedStringBuilder asb = new AttributedStringBuilder();
         if(taxon != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("T: " + taxon.toReferenceString() + "\n");
+               .append("T: " + taxon.toString() + "\n");
         }
         if(synonym != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("S: " + synonym.toReferenceString() + "\n");
+               .append("S: " + synonym.toString() + "\n");
         }
         if(name != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("N: " + name.toReferenceString() + "\n");
+               .append("N: " + name.toString() + "\n");
         }
         if(nameRelation != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("NN: " + nameRelation.toReferenceString() + "\n");
+               .append("NN: " + nameRelation.toString() + "\n");
         }
         if(reference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("R: " + reference.toReferenceString(25, 40) + "\n");
+               .append("R: " + reference.toString(25, 40) + "\n");
         }
         if(nameReference != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("NR: " + nameReference.toReferenceString() + "\n");
+               .append("NR: " + nameReference.toString() + "\n");
         }
         if(region != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-               .append("A: " + region.toReferenceString() + "\n");
+               .append("A: " + region.toString() + "\n");
         }
         if(distribution != null) {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
-               .append("D: " + distribution.toReferenceString() + "\n");
+               .append("D: " + distribution.toString() + "\n");
         }
         asb.style(AttributedStyle.DEFAULT)
             .append(guidance + prompt).toAnsi();

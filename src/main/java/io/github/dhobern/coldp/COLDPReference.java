@@ -261,11 +261,11 @@ public class COLDPReference implements TreeRenderable {
         return buildCSV(ID, author, title, year, source, details, link);
     }
     
-    public String toReferenceString() {
+    public String toString() {
         return ID + " " + author + ", " + year + ", " + title;
     }
 
-    public String toReferenceString(int authorLength, int titleLength) {
+    public String toString(int authorLength, int titleLength) {
         return ID + " " + abbreviate(author, authorLength) + ", " + year + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
     }
 
