@@ -107,7 +107,9 @@ public class InteractiveCommandLine {
                                 reference = icl.findInstance(referenceString, coldp.getReferences(), coldp.getReferences().values());
                             }
                             COLDPName basionym = null;
-                            String basionymString = icl.readLine("Basionym (empty if none)", icl.getName() == null ? "" : icl.getName().getID(), false);
+                            String basionymString = icl.readLine("Basionym (empty if none)", 
+                                    (icl.getName() == null || Objects.equals(icl.getName(), icl.getName().getBasionym()))
+                                            ? "" : icl.getName().getID(), false);
                             if (basionymString != null && basionymString.length() > 0) {
                                 basionym = icl.findInstance(basionymString, coldp.getNames(), coldp.getNames().values());
                             }
@@ -126,7 +128,8 @@ public class InteractiveCommandLine {
                             }
                             COLDPName basionym = name.getBasionym();
                             if (    (basionym == null && icl.getConfirmation("Select basionym?"))
-                                 || (basionym != null && icl.getConfirmation("Replace current basionym " + basionym.toString() + "?"))) {
+                                 || (basionym != null && !basionym.equals(name) 
+                                    && icl.getConfirmation("Replace current basionym " + basionym.toString() + "?"))) {
                                 String nameString = icl.readLine("Basionym", "", false);
                                 if (nameString != null && nameString.length() > 0) {
                                     basionym = icl.findInstance(nameString, coldp.getNames(), coldp.getNames().values());
@@ -208,7 +211,7 @@ public class InteractiveCommandLine {
                             icl.setReference(icl.getTaxon().getReference());
                         }
                         break;
-                    case "s": 
+                    case "t.s": 
                         {
                             COLDPTaxon taxon = icl.getTaxon();
                             if (taxon != null && taxon.getSynonyms() != null && taxon.getSynonyms().size() > 0) {
@@ -220,6 +223,23 @@ public class InteractiveCommandLine {
                                     int index = icl.selectFromList(synonyms);
                                     if (index >= 0 && index < synonyms.length) {
                                         icl.setSynonym(taxon.getSynonyms().get(index));
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case "n.s": 
+                        {
+                            COLDPName name = icl.getName();
+                            if (name != null && name.getSynonyms() != null && name.getSynonyms().size() > 0) {
+                                if (name.getSynonyms().size() == 1) {
+                                    icl.setSynonym(name.getSynonyms().get(0));
+                                } else {
+                                    String[] synonyms = new String[name.getSynonyms().size()];
+                                    name.getSynonyms().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(synonyms);
+                                    int index = icl.selectFromList(synonyms);
+                                    if (index >= 0 && index < synonyms.length) {
+                                        icl.setSynonym(name.getSynonyms().get(index));
                                     }
                                 }
                             }
@@ -488,6 +508,8 @@ public class InteractiveCommandLine {
             case "native": return "_native";
             case "class" : return "clazz";
             case "not established" : return "not_established";
+            case "provisionally accepted" : return "provisionally_accepted";
+            case "ambiguous synonym" : return "ambiguous_synonym";
         }
         return s;
     }
@@ -700,7 +722,11 @@ public class InteractiveCommandLine {
         if (reference != null) {
             name.setPublishedInPage(readLine("Published in page", name.getPublishedInPage(), false));
         }
-        name.setPublishedInYear(readLine("Published in year", name.getPublishedInYear(), "^([1-2][0-9]{3})?$", false));
+        String year = name.getPublishedInYear();
+        if (year == null && name.getAuthorship() != null) {
+            year = name.getAuthorship().replaceAll("^(.*)([0-2][0-9]{3}?)(.*)", "$2");
+        }
+        name.setPublishedInYear(readLine("Published in year", year, "^([1-2][0-9]{3})?$", false));
         name.setCode(readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
         name.setStatus(readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
         name.setRemarks(readLine("Remarks", name.getRemarks(), false));
