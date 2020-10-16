@@ -17,7 +17,6 @@ package io.github.dhobern.coldp;
 
 import static io.github.dhobern.utils.ZipUtils.zipFolder;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
@@ -26,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -99,6 +99,23 @@ public class InteractiveCommandLine {
                             icl.setName(icl.getName().getBasionym());
                         }
                         break;
+                    case "n+":
+                        {
+                            COLDPReference reference = icl.getReference();
+                            if (reference == null) {
+                                String referenceString = icl.readLine("Reference (empty if none)", "", false);
+                                reference = icl.findInstance(referenceString, coldp.getReferences(), coldp.getReferences().values());
+                            }
+                            COLDPName basionym = null;
+                            String basionymString = icl.readLine("Basionym (empty if none)", icl.getName() == null ? "" : icl.getName().getID(), false);
+                            if (basionymString != null && basionymString.length() > 0) {
+                                basionym = icl.findInstance(basionymString, coldp.getNames(), coldp.getNames().values());
+                            }
+                            COLDPName name = coldp.newName();
+                            icl.editName(name, basionym, reference);
+                            icl.setName(name);
+                        }
+                        break;
                     case "n/": 
                         if (icl.getName() != null) {
                             COLDPName name = icl.getName();
@@ -106,7 +123,6 @@ public class InteractiveCommandLine {
                             if (reference != null 
                                     && (name.getReference() == null || !name.getReference().equals(reference))
                                     && icl.getConfirmation("Use currently selected reference " + reference.toString(25, 40) + "?")) {
-                                name.setReference(reference);
                             }
                             COLDPName basionym = name.getBasionym();
                             if (    (basionym == null && icl.getConfirmation("Select basionym?"))
@@ -115,38 +131,10 @@ public class InteractiveCommandLine {
                                 if (nameString != null && nameString.length() > 0) {
                                     basionym = icl.findInstance(nameString, coldp.getNames(), coldp.getNames().values());
                                     if (basionym != null) {
-                                        name.setBasionym(basionym);
                                     }
                                 }
                             }
-                            name.setAuthorship(icl.readLine("Authorship", name.getAuthorship(), false));
-                            RankEnum rank = icl.readEnum(RankEnum.class, "Rank", name.getRank(), false);
-                            name.setRank(rank.toString());
-                            if (rank.isUninomial()) {
-                                name.setUninomial(icl.readLine("Uninomial", name.getUninomial(), false));
-                                name.setScientificName(name.getUninomial());
-                                name.setGenus(null);
-                                name.setSpecificEpithet(null);
-                                name.setInfraspecificEpithet(null);
-                            } else {
-                                name.setUninomial(null);
-                                String genus = icl.readLine("Genus", name.getGenus(), false);
-                                name.setGenus(genus);
-                                String specificEpithet = icl.readLine("Specific epithet", name.getSpecificEpithet(), false);
-                                name.setSpecificEpithet(specificEpithet);
-                                String infraspecificEpithet = null;
-                                if (rank.isInfraspecific()) {
-                                    infraspecificEpithet = icl.readLine("Infraspecific epithet", name.getInfraspecificEpithet(), false);
-                                    name.setInfraspecificEpithet(infraspecificEpithet);
-                                }
-                                name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
-                            }
-                            name.setPublishedInPage(icl.readLine("Published in page", name.getPublishedInPage(), false));
-                            name.setPublishedInYear(icl.readLine("Published in year", name.getPublishedInYear(), "^([1-2][0-9]{3})?$", false));
-                            name.setCode(icl.readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
-                            name.setStatus(icl.readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
-                            name.setRemarks(icl.readLine("Remarks", name.getRemarks(), false));
-                            name.setLink(icl.readLine("Link", name.getLink(), false));
+                            icl.editName(name, basionym, reference);
                         }
                         break;
                         
@@ -157,20 +145,42 @@ public class InteractiveCommandLine {
                         icl.setRegion(icl.findInstance(line, coldp.getRegions(), coldp.getRegions().values()));
                         break;
                     case "nr": 
-                        int index = Integer.parseInt(line);
-                        icl.setNameReference(
-                                (line == null || icl.getName() == null 
-                                        || icl.getName().getNameReferences() == null 
-                                        || icl.getName().getNameReferences().size() < index) 
-                                    ? null : icl.getName().getNameReferences().get(index - 1));
+                        {
+                            COLDPName name = icl.getName();
+                            if (name != null && name.getNameReferences() != null && name.getNameReferences().size() > 0) {
+                                if (name.getNameReferences().size() == 1) {
+                                    icl.setNameReference(name.getNameReferences().get(0));
+                                } else {
+                                    String[] nameReferences = new String[name.getNameReferences().size()];
+                                    name.getNameReferences().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(nameReferences);
+                                    int index = icl.selectFromList(nameReferences);
+                                    if (index >= 0 && index < nameReferences.length) {
+                                        icl.setNameReference(name.getNameReferences().get(index));
+                                    }
+                                }
+                            }
+                        }
                         break;
-                    case "nn": 
-                        index = Integer.parseInt(line);
-                        icl.setNameRelation(
-                                (line == null || icl.getName() == null 
-                                        || icl.getName().getNameRelations() == null 
-                                        || icl.getName().getNameRelations().size() < index) 
-                                    ? null : icl.getName().getNameRelations().get(index - 1));
+                    case "nr/":
+                        if (icl.getNameReference() != null) {
+                            icl.editNameReference(icl.getNameReference());
+                        }
+                    case "nn":
+                        {
+                            COLDPName name = icl.getName();
+                            if (name != null && name.getNameRelations() != null && name.getNameRelations().size() > 0) {
+                                if (name.getNameRelations().size() == 1) {
+                                    icl.setNameRelation(name.getNameRelations().get(0));
+                                } else {
+                                    String[] nameRelations = new String[name.getNameRelations().size()];
+                                    name.getNameRelations().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(nameRelations);
+                                    int index = icl.selectFromList(nameRelations);
+                                    if (index >= 0 && index < nameRelations.length) {
+                                        icl.setNameRelation(name.getNameRelations().get(index));
+                                    }
+                                }
+                            }
+                        }
                         break;
                     case "p":
                         if (icl.getTaxon() != null 
@@ -199,12 +209,21 @@ public class InteractiveCommandLine {
                         }
                         break;
                     case "s": 
-                        index = Integer.parseInt(line);
-                        icl.setSynonym(
-                                (line == null || icl.getTaxon() == null 
-                                        || icl.getTaxon().getSynonyms() == null 
-                                        || icl.getTaxon().getSynonyms().size() < index) 
-                                    ? null : icl.getTaxon().getSynonyms().iterator().next());
+                        {
+                            COLDPTaxon taxon = icl.getTaxon();
+                            if (taxon != null && taxon.getSynonyms() != null && taxon.getSynonyms().size() > 0) {
+                                if (taxon.getSynonyms().size() == 1) {
+                                    icl.setSynonym(taxon.getSynonyms().get(0));
+                                } else {
+                                    String[] synonyms = new String[taxon.getSynonyms().size()];
+                                    taxon.getSynonyms().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(synonyms);
+                                    int index = icl.selectFromList(synonyms);
+                                    if (index >= 0 && index < synonyms.length) {
+                                        icl.setSynonym(taxon.getSynonyms().get(index));
+                                    }
+                                }
+                            }
+                        }
                         break;
                     case "c": 
                         if (icl.getTaxon() != null 
@@ -468,6 +487,7 @@ public class InteractiveCommandLine {
         switch(s) {
             case "native": return "_native";
             case "class" : return "clazz";
+            case "not established" : return "not_established";
         }
         return s;
     }
@@ -489,6 +509,7 @@ public class InteractiveCommandLine {
         
         return response.booleanValue();
     }
+    
     
     public int selectFromList(String[] list) {
         int index = 0;
@@ -646,6 +667,61 @@ public class InteractiveCommandLine {
         setDistribution(distribution);
         
         return distribution;
+    }
+    
+    private void editName(COLDPName name, COLDPName basionym, COLDPReference reference) {
+        COLDPNameReference nameReference = name.getRedundantNameReference(false);
+        
+        name.setReference(reference);
+        name.setBasionym(basionym == null ? name : basionym);
+
+        name.setAuthorship(readLine("Authorship", name.getAuthorship(), false));
+        RankEnum rank = readEnum(RankEnum.class, "Rank", (name.getRank() == null ? "species" : name.getRank()), false);
+        name.setRank(rank.toString());
+        if (rank.isUninomial()) {
+            name.setUninomial(readLine("Uninomial", name.getUninomial(), false));
+            name.setScientificName(name.getUninomial());
+            name.setGenus(null);
+            name.setSpecificEpithet(null);
+            name.setInfraspecificEpithet(null);
+        } else {
+            name.setUninomial(null);
+            String genus = readLine("Genus", name.getGenus(), false);
+            name.setGenus(genus);
+            String specificEpithet = readLine("Specific epithet", name.getSpecificEpithet(), false);
+            name.setSpecificEpithet(specificEpithet);
+            String infraspecificEpithet = null;
+            if (rank.isInfraspecific()) {
+                infraspecificEpithet = readLine("Infraspecific epithet", name.getInfraspecificEpithet(), false);
+                name.setInfraspecificEpithet(infraspecificEpithet);
+            }
+            name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
+        }
+        if (reference != null) {
+            name.setPublishedInPage(readLine("Published in page", name.getPublishedInPage(), false));
+        }
+        name.setPublishedInYear(readLine("Published in year", name.getPublishedInYear(), "^([1-2][0-9]{3})?$", false));
+        name.setCode(readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
+        name.setStatus(readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
+        name.setRemarks(readLine("Remarks", name.getRemarks(), false));
+        name.setLink(readLine("Link", name.getLink(), false));
+        if(nameReference != null && getConfirmation("Edit existing associated name reference: " + nameReference.toString())) {
+            editNameReference(nameReference);
+        } else if (name.getReference() != null && name.getPublishedInPage() != null && getConfirmation("Create associated name reference", false)) {
+            nameReference = new COLDPNameReference();
+            nameReference.setName(name);
+            nameReference.setReference(reference);
+            nameReference.setPage(name.getPublishedInPage());
+            nameReference.setLink(name.getLink());
+            nameReference.setRemarks(name.getRemarks());
+            editNameReference(nameReference);
+        }
+    }
+    
+    private void editNameReference(COLDPNameReference nameReference) {
+        nameReference.setPage(readLine("Page", nameReference.getPage(), false));
+        nameReference.setLink(readLine("Link", nameReference.getLink(), false));
+        nameReference.setRemarks(readLine("Remarks", nameReference.getRemarks(), false));
     }
 
     private void showError(String s) {
