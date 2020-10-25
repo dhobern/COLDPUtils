@@ -65,7 +65,7 @@ public class COLDataPackageTest {
     public void testTaxonRender() {
         COLDPTaxon taxon = coldp.getTaxa().get("268"); // Ochyroticinae
         
-        taxon.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.HTML, ContextType.None));
+        taxon.render(new PrintWriter(System.out, true), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
     }
 
     @Test

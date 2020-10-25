@@ -5,6 +5,7 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.Objects;
@@ -178,7 +179,9 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
 
     @Override
     public String toString() {
-        return "[" + name.toString() + "] " + type + " [" + relatedName.toString() + "]";
+        return "[" + name.toString() + "] " 
+                + NameRelationTypeEnum.getLabel(type, false, false) 
+                + " [" + relatedName.toString() + "]";
     }
     
     public String getSortString() {
@@ -209,68 +212,41 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            COLDPName contextName = context.getCurrentName();
-            String formatted = upperFirst(type);
-            COLDPName nameToRender;
-
-            if (name.equals(contextName)) {
-                nameToRender = relatedName;
-                switch(formatted) {
-                    case "Type":
-                        if (contextName.getRank().equals("genus")) {
-                            formatted = "Is type for family";
-                        } else if (contextName.getRank().equals("species")) {
-                            formatted = "Is type for genus";
-                        } else {
-                            formatted = "Is type for";
-                        }
-                        break;
-                    case "Basionym":
-                        formatted = "Has basionym";
-                        break;
-                    case "Later homonym":
-                        formatted = "Is later homonym of";
-                        break;
-                    case "Superfluous":
-                        formatted = "Is superfluous replacement for";
-                        break;
-                }
-            } else {
-                nameToRender = name;
-                switch(formatted) {
-                    case "Type":
-                        if (contextName.getRank().equals("family")) {
-                            formatted = "Has type genus";
-                        } else if (contextName.getRank().equals("genus")) {
-                            formatted = "Has type species";
-                        } else {
-                            formatted = "Has type";
-                        }   
-                        break;
-                    case "Basionym":
-                        formatted = "Is basionym for";
-                        break;
-                    case "Later homonym":
-                        formatted = "Has later homonym";
-                        break;
-                    case "Superfluous":
-                        formatted = "Has superfluous replacement";
-                        break;
-                }
+        TreeRenderType renderType = context.getTreeRenderType();
+        COLDPName contextName = context.getCurrentName();
+        COLDPTaxon contextTaxon = context.getCurrentTaxon();
+        COLDPName taxonName = (contextTaxon == null) ? null : contextTaxon.getName();
+        
+        COLDPName nameToRender;
+        String formatted;
+        boolean continueRendering = true;
+        
+        if (name.equals(contextName)) {
+            if (Objects.equals(relatedName, taxonName)) {
+                // This name relation will already have been shown in enclosing taxon
+                return;
             }
-
-            if (remarks != null && !remarks.equalsIgnoreCase(formatted)) {
-                formatted += " (" + upperFirst(linkURLs(remarks)) + ")";
+            nameToRender = relatedName;
+            formatted = NameRelationTypeEnum.getLabel(type, false, true);
+        } else {
+            if (Objects.equals(name, taxonName)) {
+                // This name relation will already have been shown in enclosing taxon
+                return;
             }
+            nameToRender = name;
+            formatted = NameRelationTypeEnum.getLabel(type, true, true);
+        }
 
-            formatted += ": " + COLDPName.formatName(nameToRender);
+        if (remarks != null && !remarks.equalsIgnoreCase(formatted)) {
+            formatted += " (" + upperFirst(renderType.linkURLs(remarks)) + ")";
+        }
 
-            writer.println(context.getIndent() + wrapDiv("NameRelationship", formatted));
+        formatted += ": " + COLDPName.formatName(nameToRender, renderType);
 
-            if (reference != null) {
-                context.addReference(reference);
-            }
+        writer.println(context.getIndent() + renderType.openNode("NameRelationship") + formatted + renderType.closeNode());
+
+        if (reference != null) {
+            context.addReference(reference);
         }
     }
 }

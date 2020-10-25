@@ -6,6 +6,7 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.Comparator;
@@ -209,38 +210,48 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            String note = null;
-            if (reference != null) {
-                context.addReference(reference);
-                note =  reference.getAuthor();
-                if (reference.getYear() != null) {
-                    note += " " + reference.getYear();
-                }
+        TreeRenderType renderType = context.getTreeRenderType();
+        String note = null;
+        if (reference != null) {
+            context.addReference(reference);
+            note =  reference.getAuthor();
+            if (reference.getYear() != null) {
+                note += " " + reference.getYear();
             }
-            
-            if (remarks != null) {
-                if (note == null) {
-                    note = remarks;
-                } else {
-                    note = note + ": " + remarks;
-                }
-            }
-            
-            String formatted = (region == null) ? area : region.getName();
-
-            if (status != null && !status.equals("native")) {
-                if (note != null && !note.equalsIgnoreCase(status)) {
-                    formatted += " (" + status + ", " + note + ")";
-                } else {
-                    formatted += " (" + status + ")";
-                }
-            } else if (note != null) {
-                formatted += " (" +  note + ")";
-            }
-
-            writer.println(context.getIndent() + wrapDiv("Region", formatted));
         }
+
+        if (remarks != null) {
+            if (note == null) {
+                note = remarks;
+            } else {
+                note = note + ": " + remarks;
+            }
+        }
+
+        String formatted;
+        String nodeClass;
+        String nodeID;
+        if (context.getCurrentRegion() != null) {
+            formatted = COLDPName.formatName(taxon.getName(), renderType);
+            nodeClass = upperFirst(taxon.getName().getRank());
+            nodeID = taxon.getID();
+        } else {
+            formatted = (region == null) ? area : region.getName();
+            nodeClass = "Region";
+            nodeID = null;
+        }
+
+        if (status != null && !status.equals("native")) {
+            if (note != null && !note.equalsIgnoreCase(status)) {
+                formatted += " (" + status + ", " + note + ")";
+            } else {
+                formatted += " (" + status + ")";
+            }
+        } else if (note != null) {
+            formatted += " (" +  note + ")";
+        }
+
+        writer.println(context.getIndent() + renderType.openNodeWithID(nodeClass, nodeID) + formatted + renderType.closeNode());
     }
     public static class RegionSort implements Comparator<COLDPDistribution> { 
         @Override
@@ -249,6 +260,20 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
             if (o1.region != null && o1.region.getName() != null 
                     && o2.region != null && o2.region.getName() != null) {
                 comparison = o1.region.getName().compareTo(o2.region.getName());
+            } else {
+                comparison = o1.compareTo(o2);
+            }
+            return comparison;
+        }
+    }  
+
+    public static class TaxonSort implements Comparator<COLDPDistribution> { 
+        @Override
+        public int compare(COLDPDistribution o1, COLDPDistribution o2) {
+            int comparison;
+            if (o1.taxon != null && o1.taxon.getName() != null 
+                    && o2.taxon != null && o2.taxon.getName() != null) {
+                comparison = o1.taxon.getName().getScientificName().compareTo(o2.taxon.getName().getScientificName());
             } else {
                 comparison = o1.compareTo(o2);
             }

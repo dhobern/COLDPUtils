@@ -136,10 +136,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     
     public void setRank(String rank) {
         this.rank = rank;
-    }
-
-    public RankEnum getRankEnum() {
-        if (rankEnum == RankEnum.none && rank != null) {
+        if (rank != null) {
             try {
                 String r = rank.toLowerCase();
                 if (r.equals("class")) {
@@ -151,7 +148,9 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
                 rankEnum = RankEnum.unknown;
             }
         }
-        
+    }
+
+    public RankEnum getRankEnum() {
         return rankEnum;
     }
 
@@ -487,100 +486,101 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
+        TreeRenderType renderType = context.getTreeRenderType();
         COLDPTaxon taxon = context.getCurrentTaxon();
         COLDPSynonym synonym = context.getCurrentSynonym();
         String nameRemarks = safeTrim(linkURLs(remarks));
         
-        if (context.getTreeRenderType() == TreeRenderType.HTML) {
-            String qualifier = "";
-            if (synonym != null) {
-                qualifier = "=&nbsp;";
-            }
+        String qualifier = "";
+        if (synonym != null) {
+            qualifier = "=" + renderType.getNBSP();
+        }
 
-            String synonymRemarks = null;
-            if (synonym != null) {
-                synonymRemarks = safeTrim(linkURLs(synonym.getRemarks()));
-                if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
-                    synonymRemarks = upperFirst(synonym.getStatus());
+        String synonymRemarks = null;
+        if (synonym != null) {
+            synonymRemarks = safeTrim(renderType.linkURLs(synonym.getRemarks()));
+            if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
+                synonymRemarks = upperFirst(synonym.getStatus());
+            }
+        }
+        if (synonymRemarks != null) {
+            synonymRemarks = " (" + synonymRemarks + ")"; 
+        } else {
+            synonymRemarks = "";
+        }
+
+        if (reference != null) {
+            context.addReference(reference);
+        }
+
+        String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + renderType.wrapStrong(formatName(this, renderType));
+
+        String indent = context.getIndent();
+        writer.println(indent + renderType.openNode("Name") + formatted);
+
+        if (nameReferences != null) {
+            for (COLDPNameReference nameReference : nameReferences) {
+                if (nameReference.getReference() == null) {
+                    LOG.error("Reference missing for NameReference: " + nameReference.toString());
                 }
+                nameReference.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
             }
-            if (synonymRemarks != null) {
-                synonymRemarks = " (" + synonymRemarks + ")"; 
-            } else {
-                synonymRemarks = "";
-            }
-            
-            if (reference != null) {
-                context.addReference(reference);
-            }
+        }
 
-            String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + wrapStrong(formatName(this));
+        if (nameRelations != null) {
+            nameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
+                    .forEach(nameRelation ->  {
+                                if (nameRelation.getReference() != null) {
+                                    context.addReference(nameRelation.getReference());
+                                }
+                                nameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                            });
+        }
 
-            String indent = context.getIndent();
-            writer.println(indent + "<div class=\"Name\">" + formatted);
+        if (relatedNameRelations != null) {
+            relatedNameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
+                    .forEach(relatedNameRelation ->  {
+                                if (relatedNameRelation.getReference() != null) {
+                                    context.addReference(relatedNameRelation.getReference());
+                                }
+                                relatedNameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
+                            });
+        }
 
-            if (nameReferences != null) {
-                for (COLDPNameReference nameReference : nameReferences) {
-                    if (nameReference.getReference() == null) {
-                        LOG.error("Reference missing for NameReference: " + nameReference.toString());
-                    }
-                    nameReference.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
-                }
-            }
+        if (synonym == null && remarks != null) {
+            renderNote(writer, new TreeRenderProperties(context, this, ContextType.Name));
+        }
 
-            if (nameRelations != null) {
-                nameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
-                        .forEach(nameRelation ->  {
-                                    if (nameRelation.getReference() != null) {
-                                        context.addReference(nameRelation.getReference());
-                                    }
-                                    nameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
-                                });
-            }
-
-            if (relatedNameRelations != null) {
-                relatedNameRelations.stream().sorted(Comparator.comparing(COLDPNameRelation::getSortString))
-                        .forEach(relatedNameRelation ->  {
-                                    if (relatedNameRelation.getReference() != null) {
-                                        context.addReference(relatedNameRelation.getReference());
-                                    }
-                                    relatedNameRelation.render(writer, new TreeRenderProperties(context, this, ContextType.Name));
-                                });
-            }
-
-            if (synonym == null && remarks != null) {
-                renderNote(writer, new TreeRenderProperties(context, this, ContextType.Name));
-            }
-
-            writer.println(indent + "</div>");
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
         }
     }
     
     private void renderNote(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(remarks))));
-        }
+        TreeRenderType renderType = context.getTreeRenderType();
+        writer.println(context.getIndent() + wrapDiv("Note", renderType.wrapEmphasis(renderType.linkURLs(remarks))));
     }    
 
-    public static String formatName(COLDPName name) {
+    public static String formatName(COLDPName name, TreeRenderType renderType) {
         String scientificName = name.getScientificName();
         switch (name.getRank()) {
             case "genus":
             case "species":
             case "subspecies":
-                scientificName = wrapEmphasis(scientificName);
+                scientificName = renderType.wrapEmphasis(scientificName);
                 break;
             case "variety":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " var. " + wrapEmphasis(name.getInfraspecificEpithet());
+                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " var. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
                 break;
             case "form":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " f. " + wrapEmphasis(name.getInfraspecificEpithet());
+                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " f. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
                 break;
             case "aberration":
-                scientificName = wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " ab. " + wrapEmphasis(name.getInfraspecificEpithet());
+                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                        + " ab. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
                 break;
         }
         

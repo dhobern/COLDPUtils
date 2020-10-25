@@ -74,4 +74,12 @@ public enum RankEnum {
     public String toString() {
         return (this == clazz ? "class" : name());
     }
+    
+    public boolean isHigherThan(RankEnum other) {
+        return (this.ordinal() < other.ordinal());
+    }
+    
+    public boolean isLowerThan(RankEnum other) {
+        return (this.ordinal() > other.ordinal());
+    }
 }

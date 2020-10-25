@@ -140,7 +140,7 @@ public class COLDataPackage {
                 taxon = newTaxon();
                 taxon.setParent(parent);
                 taxon.setName(name);
-                taxon.fixHierarchy(false);
+                taxon.fixHierarchy(false, false, false);
                 taxon.setReference(reference);
                 taxon.setRemarks(taxonRemarks);
                 taxon.setScrutinizer(scrutinizer);
@@ -218,6 +218,15 @@ public class COLDataPackage {
         return null;
     }
 
+    public List<COLDPSynonym> findSynonyms(Optional<COLDPTaxon> taxon,
+            Optional<COLDPName> name) {
+        return synonyms.stream().filter(s -> {
+            if (taxon != null && !taxon.equals(Optional.ofNullable(s.getTaxon()))) return false;
+            if (name != null && !name.equals(Optional.ofNullable(s.getName()))) return false;
+            return true;
+        }).collect(Collectors.toList());
+    }
+
     public List<COLDPDistribution> getDistributions() {
         return distributions;
     }
@@ -268,6 +277,18 @@ public class COLDataPackage {
             nr.setName(null);
             nr.setReference(null);
             nameReferences.remove(nr);
+            return true;
+        }
+        
+        return false;
+    }
+
+    public boolean deleteNameRelation(COLDPNameRelation nr) {
+        if (nr != null) {
+            nr.setName(null);
+            nr.setRelatedName(null);
+            nr.setReference(null);
+            nameRelations.remove(nr);
             return true;
         }
         

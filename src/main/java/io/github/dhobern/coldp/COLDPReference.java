@@ -5,6 +5,7 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -271,29 +272,28 @@ public class COLDPReference implements TreeRenderable {
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            String formatted = getAuthor();
-            if (getYear() != null) {
-                formatted += " (" + getYear() + ")";
-            }
-            formatted = wrapStrong(formatted) + " ";
-            formatted += getTitle();
-            if (!formatted.endsWith(".")) {
-                formatted += ".";
-            }   
-            if (getSource() != null && getSource().length() > 0) {
-                formatted += " <em>" + getSource() + "</em>";
-            }
-            if (getDetails() != null && getDetails().length() > 0) {
-                formatted += " " + getDetails();
-            }
-            if (!formatted.endsWith(".")) {
-                formatted += ".";
-            }
-            if (getLink() != null && getLink().length() > 0) {
-                formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
-            }
-            writer.println(context.getIndent() + wrapDiv("Reference", formatted));
+        TreeRenderType renderType = context.getTreeRenderType();
+        String formatted = getAuthor();
+        if (getYear() != null) {
+            formatted += " (" + getYear() + ")";
         }
+        formatted = renderType.wrapStrong(formatted) + " ";
+        formatted += getTitle();
+        if (!formatted.endsWith(".")) {
+            formatted += ".";
+        }   
+        if (getSource() != null && getSource().length() > 0) {
+            formatted += " " + renderType.wrapEmphasis(getSource());
+        }
+        if (getDetails() != null && getDetails().length() > 0) {
+            formatted += " " + getDetails();
+        }
+        if (!formatted.endsWith(".")) {
+            formatted += ".";
+        }
+        if (getLink() != null && getLink().length() > 0 && renderType.equals(TreeRenderType.HTML)) {
+            formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+        }
+        writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
     }
 }

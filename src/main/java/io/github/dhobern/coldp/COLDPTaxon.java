@@ -7,6 +7,7 @@ package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.COLDPDistribution.RegionSort;
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -87,8 +88,8 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
             if (name != null 
                     && parent != null 
                     && parent.getName() != null
-                    && name.getRankEnum().ordinal() <= parent.getName().getRankEnum().ordinal()) {
-                LOG.error("Cannot only set higher-ranked taxon as parent");
+                    && !name.getRankEnum().isLowerThan(parent.getName().getRankEnum())) {
+                LOG.error("Can only set higher-ranked taxon as parent");
             }
 
             if (this.parent != null) {
@@ -103,10 +104,11 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
     
     public void fixHierarchy() {
-        fixHierarchy(false);
+        fixHierarchy(false, false, false);
     }
         
-    public void fixHierarchy(boolean fixName) {
+    public void fixHierarchy(boolean fixName, boolean fixChildren, 
+            boolean fixChildNames) {
 
         // At this point, we expect the parent to be of a higher rank than
         // this taxon
@@ -115,62 +117,56 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
             RankEnum rank = name.getRankEnum();
             RankEnum parentRank = parent.getName().getRankEnum();
             
-            if (rank.ordinal() > RankEnum.unknown.ordinal()
-                && parentRank.ordinal() > RankEnum.unknown.ordinal()) {
+            if (rank.isLowerThan(RankEnum.unknown)
+                && parentRank.isLowerThan(RankEnum.unknown)) {
 
-                if (rank.ordinal() > RankEnum.kingdom.ordinal()) {
-                    setKingdom(parentRank == RankEnum.kingdom 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getKingdom());
+                if (!rank.isHigherThan(RankEnum.kingdom)) {
+                    setKingdom(rank.isLowerThan(RankEnum.kingdom)
+                                    ? parent.getKingdom() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.phylum.ordinal()) {
-                    setPhylum(parentRank == RankEnum.phylum 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getPhylum());
+                if (!rank.isHigherThan(RankEnum.phylum)) {
+                    setPhylum(rank.isLowerThan(RankEnum.phylum)
+                                    ? parent.getPhylum() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.clazz.ordinal()) {
-                    setClazz(parentRank == RankEnum.clazz 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getClazz());
+                if (!rank.isHigherThan(RankEnum.clazz)) {
+                    setClazz(rank.isLowerThan(RankEnum.clazz)
+                                    ? parent.getClazz() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.order.ordinal()) {
-                    setOrder(parentRank == RankEnum.order 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getOrder());
+                if (!rank.isHigherThan(RankEnum.order)) {
+                    setOrder(rank.isLowerThan(RankEnum.order)
+                                    ? parent.getOrder() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.superfamily.ordinal()) {
-                    setSuperfamily(parentRank == RankEnum.superfamily 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getSuperfamily());
+                if (!rank.isHigherThan(RankEnum.superfamily)) {
+                    setSuperfamily(rank.isLowerThan(RankEnum.superfamily)
+                                    ? parent.getSuperfamily() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.family.ordinal()) {
-                    setFamily(parentRank == RankEnum.family 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getFamily());
+                if (!rank.isHigherThan(RankEnum.family)) {
+                    setFamily(rank.isLowerThan(RankEnum.family)
+                                    ? parent.getFamily() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.subfamily.ordinal()) {
-                    setSubfamily(parentRank == RankEnum.subfamily 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getSubfamily());
+                if (!rank.isHigherThan(RankEnum.subfamily)) {
+                    setSubfamily(rank.isLowerThan(RankEnum.subfamily)
+                                    ? parent.getSubfamily() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.tribe.ordinal()) {
-                    setTribe(parentRank == RankEnum.tribe 
-                                    ? parent.getName().getScientificName()
-                                    : parent.getTribe());
+                if (!rank.isHigherThan(RankEnum.tribe)) {
+                    setTribe(rank.isLowerThan(RankEnum.tribe)
+                                    ? parent.getTribe() : name.getScientificName());
                 }
-                if (rank.ordinal() > RankEnum.genus.ordinal()) {
-                    setGenus(parentRank == RankEnum.genus 
-                                    ? parent.getName().getUninomial()
-                                    : parent.getGenus());
+                if (!rank.isHigherThan(RankEnum.genus)) {
+                    setGenus(rank.isLowerThan(RankEnum.genus)
+                                    ? parent.getGenus() : name.getScientificName());
                     if (genus == null || genus.length() == 0) {
                         LOG.error("Parent of species-rank genus set to suprageneric " + parent.toString());
                         setGenus("<Unknown genus>");
                     }
+
+                    if (fixName && rank.inSpeciesGroup()) {
+                        name.fixGenus(getGenus());
+                    }
                 }
-                if (rank.ordinal() > RankEnum.species.ordinal()) {
-                    setSpecies(parentRank == RankEnum.species 
-                                    ? parent.getName().getSpecificEpithet()
-                                    : parent.getSpecies());
+                if (!rank.isHigherThan(RankEnum.species)) {
+                    setSpecies(rank.isLowerThan(RankEnum.species)
+                                    ? parent.getSpecies() : name.getScientificName());
                     if (species == null || species.length() == 0) {
                         LOG.error("Parent of infraspecific taxon set to supraspecific " + parent.toString());
                         setSpecies("<Unknown species>");
@@ -178,8 +174,10 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                 }
             }
             
-            if (fixName && rank.ordinal() >= RankEnum.species.ordinal()) {
-                name.fixGenus(getGenus());
+            if (fixChildren && children != null) {
+                for (COLDPTaxon child : children) {
+                    child.fixHierarchy(fixChildNames, true, fixChildNames);
+                }
             }
         }
     }
@@ -518,98 +516,103 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            String divClass;
-            ContextType childContextType;
-            boolean recursive;
-            if (context.getContextType() == ContextType.HigherTaxa) {
-                divClass = "HigherTaxon";
-                childContextType = ContextType.HigherTaxa;
-                recursive = false;
-                        
-            } else {
-                divClass = upperFirst(name.getRank());
-                childContextType = ContextType.Taxon;
-                recursive = true;
-            }
-                
-            if (reference != null) {
-                context.addReference(reference);
-            }
+        TreeRenderType renderType = context.getTreeRenderType();
+        String divClass;
+        ContextType childContextType;
+        boolean recursive;
+        if (context.getContextType() == ContextType.HigherTaxa) {
+            divClass = "HigherTaxon";
+            childContextType = ContextType.HigherTaxa;
+            recursive = false;
+        } else {
+            divClass = upperFirst(name.getRank());
+            childContextType = ContextType.Taxon;
+            recursive = true;
+        }
 
-            writer.println(context.getIndent() + "<div class=\"" + divClass + "\" id=\"taxon-" + ID + "\">");
-            name.render(writer, new TreeRenderProperties(context, this, childContextType));
+        if (reference != null) {
+            context.addReference(reference);
+        }
 
-            if (synonyms != null && synonyms.size() > 0) {
-                renderSynonyms(writer, new TreeRenderProperties(context, this, childContextType));
-            }
+        writer.println(context.getIndent() + renderType.openNodeWithID(divClass, "taxon-" + ID));
+        name.render(writer, new TreeRenderProperties(context, this, childContextType));
 
-            if (remarks != null) {
-                renderNote(writer, new TreeRenderProperties(context, this, childContextType));
-            }
-            
-            if (distributions != null) {
-                renderDistributions(writer,  new TreeRenderProperties(context, this, childContextType));
-            }
+        if (synonyms != null && synonyms.size() > 0) {
+            renderSynonyms(writer, new TreeRenderProperties(context, this, childContextType), renderType);
+        }
 
-            if (context.getReferenceList().size() > 0) {
-                renderReferences(writer, new TreeRenderProperties(context, this, childContextType));
-            }
+        if (remarks != null) {
+            renderNote(writer, new TreeRenderProperties(context, this, childContextType), renderType);
+        }
 
-            if (recursive && children != null) {
-                for (COLDPTaxon taxon : getChildrenSorted()) {
-                    taxon.render(writer, new TreeRenderProperties(context, this, ContextType.Taxon, true));
+        if (distributions != null) {
+            renderDistributions(writer,  new TreeRenderProperties(context, this, childContextType), renderType);
+        }
+
+        if (context.getReferenceList().size() > 0) {
+            renderReferences(writer, new TreeRenderProperties(context, this, childContextType), renderType);
+        }
+
+        if (recursive && children != null) {
+            for (COLDPTaxon taxon : getChildrenSorted()) {
+                if(renderType.spaceTaxa()) {
+                    writer.println();
                 }
+                taxon.render(writer, new TreeRenderProperties(context, this, ContextType.Taxon, true));
             }
+        }
 
-            writer.println(context.getIndent() + "</div>");
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
         }
     }
         
-    private void renderSynonyms(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + "<div class=\"Synonyms\">");
+    private void renderSynonyms(PrintWriter writer, TreeRenderProperties context, TreeRenderType renderType) {
+        writer.println(context.getIndent() + renderType.openNode("Synonyms"));
 
-            synonyms.stream().sorted(Comparator.comparing(COLDPSynonym::getSortString))
-                .forEach(synonym ->  {
-                            if (synonym.getReference() != null) {
-                                context.addReference(synonym.getReference());
-                            }
-                            synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
-                        });
+        synonyms.stream().sorted(Comparator.comparing(COLDPSynonym::getSortString))
+            .forEach(synonym ->  {
+                        if (synonym.getReference() != null) {
+                            context.addReference(synonym.getReference());
+                        }
+                        synonym.render(writer, new TreeRenderProperties(context, this, ContextType.Synonyms));
+                    });
 
-            writer.println(context.getIndent() + "</div>");
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
+        }
+   }    
+
+    private void renderReferences(PrintWriter writer, TreeRenderProperties context, TreeRenderType renderType) {
+        writer.println(context.getIndent() + renderType.openNode("References"));
+
+        for (COLDPReference reference : context.getReferenceList()) {
+            reference.render(writer, new TreeRenderProperties(context, this, ContextType.References));
+        }
+
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
         }
     }    
 
-    private void renderReferences(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + "<div class=\"References\">");
+    private void renderDistributions(PrintWriter writer, TreeRenderProperties context, TreeRenderType renderType) {
+        writer.println(context.getIndent() + renderType.openNode("Distribution") + "Distribution:");
 
-            for (COLDPReference reference : context.getReferenceList()) {
-                reference.render(writer, new TreeRenderProperties(context, this, ContextType.References));
-            }
-
-            writer.println(context.getIndent() + "</div>");
+        for (COLDPDistribution distribution : distributions) {
+            distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));
         }
-    }    
-
-    private void renderDistributions(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + "<div class=\"Distribution\">Distribution: ");
-
-            for (COLDPDistribution distribution : distributions) {
-                distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));
-            }
-
-            writer.println(context.getIndent() + "</div>");
+        
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
         }
     }    
     
-    private void renderNote(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + wrapDiv("Note", "Note: " + wrapEmphasis(linkURLs(remarks))));
-        }
+    private void renderNote(PrintWriter writer, TreeRenderProperties context, TreeRenderType renderType) {
+        writer.println(context.getIndent() + wrapDiv("Note", "Note: " + renderType.wrapEmphasis(renderType.linkURLs(remarks))));
     }    
 
     @Override

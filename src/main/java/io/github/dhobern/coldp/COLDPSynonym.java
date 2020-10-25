@@ -6,6 +6,7 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.Objects;
@@ -210,15 +211,17 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            writer.println(context.getIndent() + "<div class=\"Synonym\">");
+        TreeRenderType renderType = context.getTreeRenderType();
+        writer.println(context.getIndent() + renderType.openNode("Synonym"));
 
-            if (reference != null) {
-                context.addReference(reference);
-            }
-            name.render(writer, new TreeRenderProperties(context, this, ContextType.Synonym));
-
-            writer.println(context.getIndent() + "</div>");
+        if (reference != null) {
+            context.addReference(reference);
         }
-    }    
+        name.render(writer, new TreeRenderProperties(context, this, ContextType.Synonym));
+
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
+        }
+    }
 }

@@ -5,6 +5,7 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import io.github.dhobern.utils.StringUtils;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
@@ -176,31 +177,30 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
-        if (context.getTreeRenderType() == TreeRenderProperties.TreeRenderType.HTML) {
-            context.addReference(reference);
+        TreeRenderType renderType = context.getTreeRenderType();
+        context.addReference(reference);
 
-            String formatted = "Page reference";
+        String formatted = "Page reference";
 
-            if (remarks!= null) {
-                formatted += " (" + linkURLs(remarks) + ")";
-            }
-
-            formatted += ": " + reference.getAuthor();
-            if (reference.getYear() != null) {
-                formatted += " (" + reference.getYear() + "), ";
-            } else {
-                formatted += ", ";
-            }
-                
-
-            if (link != null && link.startsWith("http")) {
-                formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
-                        + wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
-            } else {
-                formatted += wrapStrong(page);
-            }
-
-            writer.println(context.getIndent() + wrapDiv("Reference", formatted));
+        if (remarks!= null) {
+            formatted += " (" + renderType.linkURLs(remarks) + ")";
         }
+
+        formatted += ": " + reference.getAuthor();
+        if (reference.getYear() != null) {
+            formatted += " (" + reference.getYear() + "), ";
+        } else {
+            formatted += ", ";
+        }
+
+
+        if (renderType.equals(TreeRenderType.HTML) && link != null && link.startsWith("http")) {
+            formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
+                    + renderType.wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+        } else {
+            formatted += renderType.wrapStrong(page);
+        }
+
+        writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
     }
 }

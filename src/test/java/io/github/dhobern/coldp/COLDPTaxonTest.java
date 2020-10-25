@@ -81,7 +81,7 @@ public class COLDPTaxonTest {
         assertEquals(agdistopisChildren + 1, Agdistopis.getChildren().size());
         assertEquals(pterophoroideaChildren, Pterophoroidea.getChildren().size());
 
-        fasciata.fixHierarchy(true);
+        fasciata.fixHierarchy(true, false, false);
         
         assertEquals("Agdistopis fasciata", fasciata.getName().getScientificName());
         
@@ -113,7 +113,7 @@ public class COLDPTaxonTest {
         assertEquals(agdistopisChildren, Agdistopis.getChildren().size());
         assertEquals(pterophoroideaChildren + 1, Pterophoroidea.getChildren().size());
 
-        fasciata.fixHierarchy(true);
+        fasciata.fixHierarchy(true, true, true);
         
         assertEquals("<Unknown genus> fasciata", fasciata.getName().getScientificName());
 
@@ -146,7 +146,7 @@ public class COLDPTaxonTest {
         assertEquals(agdistopisChildren, Agdistopis.getChildren().size());
         assertEquals(pterophoroideaChildren, Pterophoroidea.getChildren().size());
 
-        fasciata.fixHierarchy(true);
+        fasciata.fixHierarchy(true, true, true);
         
         assertEquals("Ochyrotica fasciata", fasciata.getName().getScientificName());
 

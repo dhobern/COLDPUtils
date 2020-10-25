@@ -6,9 +6,14 @@
 package io.github.dhobern.coldp;
 
 import io.github.dhobern.utils.StringUtils;
+import static io.github.dhobern.utils.StringUtils.upperFirst;
+import java.io.PrintWriter;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +21,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author stang
  */
-public class COLDPRegion {
+public class COLDPRegion implements TreeRenderable {
     
     private static final Logger LOG = LoggerFactory.getLogger(COLDPRegion.class);
       
@@ -99,4 +104,32 @@ public class COLDPRegion {
     public String toString() {
         return  ID + " " + name;
     }
+
+    @Override
+    public void render(PrintWriter writer, TreeRenderProperties context) {
+        TreeRenderProperties.TreeRenderType renderType = context.getTreeRenderType();
+        TreeRenderProperties childContext = new TreeRenderProperties(context, this, TreeRenderProperties.ContextType.Region);
+
+        writer.println(context.getIndent() + renderType.openNodeWithID("Region", "region-" + ID));
+        writer.println(childContext.getIndent() + renderType.openNode("Name") + name + renderType.closeNode());
+
+        if (distributions != null) {
+            renderDistributions(writer,  childContext, renderType);
+        }
+        
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
+        }
+    }
+    
+    private void renderDistributions(PrintWriter writer, TreeRenderProperties context, TreeRenderProperties.TreeRenderType renderType) {
+        writer.println(context.getIndent() + renderType.openNode("Taxa"));
+
+        Set<COLDPDistribution> sorted = new TreeSet<>(new COLDPDistribution.TaxonSort());
+        sorted.addAll(distributions);
+        for (COLDPDistribution distribution : sorted) {
+            distribution.render(writer, new TreeRenderProperties(context, this, TreeRenderProperties.ContextType.Distribution));
+        }
+    }    
 }

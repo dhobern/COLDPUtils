@@ -15,18 +15,23 @@
  */
 package io.github.dhobern.coldp;
 
+import io.github.dhobern.coldp.TreeRenderProperties.ContextType;
+import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.ZipUtils.zipFolder;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jline.reader.EndOfFileException;
@@ -114,7 +119,7 @@ public class InteractiveCommandLine {
                                 basionym = icl.findInstance(basionymString, coldp.getNames(), coldp.getNames().values());
                             }
                             COLDPName name = coldp.newName();
-                            icl.editName(name, basionym, reference);
+                            icl.editName(coldp, name, basionym, reference);
                             icl.setName(name);
                         }
                         break;
@@ -137,7 +142,7 @@ public class InteractiveCommandLine {
                                     }
                                 }
                             }
-                            icl.editName(name, basionym, reference);
+                            icl.editName(coldp, name, basionym, reference);
                         }
                         break;
                         
@@ -168,6 +173,16 @@ public class InteractiveCommandLine {
                         if (icl.getNameReference() != null) {
                             icl.editNameReference(icl.getNameReference());
                         }
+                        break;
+                    case "nr+":
+                        if (icl.getName() != null && icl.getReference() != null) {
+                            COLDPNameReference nameReference = coldp.newNameReference();
+                            nameReference.setName(icl.getName());
+                            nameReference.setReference(icl.getReference());
+                            icl.editNameReference(nameReference);
+                            icl.setNameReference(nameReference);
+                        }
+                        break;
                     case "nn":
                         {
                             COLDPName name = icl.getName();
@@ -180,6 +195,24 @@ public class InteractiveCommandLine {
                                     int index = icl.selectFromList(nameRelations);
                                     if (index >= 0 && index < nameRelations.length) {
                                         icl.setNameRelation(name.getNameRelations().get(index));
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case "rnn":
+                        {
+                            COLDPName name = icl.getName();
+                            if (name != null && name.getRelatedNameRelations() != null 
+                                    && name.getRelatedNameRelations().size() > 0) {
+                                if (name.getRelatedNameRelations().size() == 1) {
+                                    icl.setNameRelation(name.getRelatedNameRelations().get(0));
+                                } else {
+                                    String[] nameRelations = new String[name.getRelatedNameRelations().size()];
+                                    name.getRelatedNameRelations().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(nameRelations);
+                                    int index = icl.selectFromList(nameRelations);
+                                    if (index >= 0 && index < nameRelations.length) {
+                                        icl.setNameRelation(name.getRelatedNameRelations().get(index));
                                     }
                                 }
                             }
@@ -346,6 +379,36 @@ public class InteractiveCommandLine {
                             }
                         } 
                         break;
+                    case "d.t":
+                        if (icl.getDistribution() != null) {
+                            icl.setTaxon(icl.getDistribution().getTaxon());
+                        }
+                        break;
+                    case "d.r":
+                        if (icl.getDistribution() != null) {
+                            icl.setReference(icl.getDistribution().getReference());
+                        }
+                        break;
+                    case "d.a":
+                        if (icl.getDistribution() != null) {
+                            icl.setRegion(icl.getDistribution().getRegion());
+                        }
+                        break;
+                    case "s.t":
+                        if (icl.getSynonym() != null) {
+                            icl.setTaxon(icl.getSynonym().getTaxon());
+                        }
+                        break;
+                    case "s.r":
+                        if (icl.getSynonym() != null) {
+                            icl.setReference(icl.getSynonym().getReference());
+                        }
+                        break;
+                    case "s.n":
+                        if (icl.getSynonym() != null) {
+                            icl.setName(icl.getSynonym().getName());
+                        }
+                        break;
                     case "d/":
                         COLDPDistribution distribution = icl.getDistribution();
                         if (distribution != null) {
@@ -414,7 +477,89 @@ public class InteractiveCommandLine {
                             }                                
                         }
                         break;
-
+                    case "nr.n":
+                        if (icl.getNameReference() != null) {
+                            icl.setName(icl.getNameReference().getName());
+                        }
+                        break;
+                    case "nr.r":
+                        if (icl.getNameReference() != null) {
+                            icl.setReference(icl.getNameReference().getReference());
+                        }
+                        break;
+                    case "nn.r":
+                        if (icl.getNameRelation() != null) {
+                            icl.setReference(icl.getNameRelation().getReference());
+                        }
+                        break;
+                    case "nn.n":
+                        if (icl.getNameRelation() != null) {
+                            icl.setName(icl.getNameRelation().getName());
+                        }
+                        break;
+                    case "nn.rn":
+                        if (icl.getNameRelation() != null) {
+                            icl.setName(icl.getNameRelation().getRelatedName());
+                        }
+                        break;
+                    case "nn/":
+                        if (icl.getNameRelation() != null) {
+                            icl.editNameRelation(icl.getNameRelation());
+                        }
+                        break;
+                    case "nn+":
+                        if (icl.getName() != null) {
+                            icl.addNameRelation(coldp, null, null, null);
+                        }
+                        break;
+                    case "t!":
+                        if (icl.getTaxon() != null) {
+                            icl.getTaxon().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "n!":
+                        if (icl.getName() != null) {
+                            icl.getName().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "a!":
+                        if (icl.getRegion() != null) {
+                            icl.getRegion().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "s/":
+                        COLDPSynonym synonym = icl.getSynonym();
+                        if (synonym != null) {
+                            String taxonID = synonym.getTaxonID();
+                            COLDPTaxon taxon = icl.getTaxon();
+                            if (taxon != null && (taxonID == null || !taxonID.equals(taxon.getID()))
+                                && icl.getConfirmation("Use currently selected taxon " + taxon.toString() + "?")) {
+                                synonym.setTaxon(taxon);
+                            }
+                            String referenceID = synonym.getReferenceID();
+                            reference = icl.getReference();
+                            if (reference != null) {
+                                if (referenceID == null || !referenceID.equals(reference.getID())
+                                    && icl.getConfirmation("Use currently selected reference " 
+                                            + reference.toString(25, 40) + "?")) {
+                                    synonym.setReference(reference);
+                                }
+                            } else {
+                                if (referenceID != null && reference == null
+                                    && icl.getConfirmation("Remove reference from record " 
+                                            + synonym.getReference().toString(25, 40) + "?")) {
+                                    synonym.setReference(null);
+                                }
+                            }
+                            synonym.setStatus(icl.readEnum(SynonymStatusEnum.class, "Status", synonym.getStatus(), false).toString());
+                            synonym.setRemarks(icl.readLine("Remarks", synonym.getRemarks(), false));
+                        }
+                        break;
+                    case "s+":
+                        if (icl.getTaxon() != null && icl.getName() != null) {
+                            icl.addSynonym(coldp, null, null);
+                        }
+                        break;
                 }
             }
         }
@@ -691,35 +836,207 @@ public class InteractiveCommandLine {
         return distribution;
     }
     
-    private void editName(COLDPName name, COLDPName basionym, COLDPReference reference) {
+    private COLDPSynonym addSynonym(COLDataPackage coldp, String status, String remarks) {
+        COLDPSynonym synonym = null;
+        List<COLDPSynonym> synonyms 
+                = coldp.findSynonyms(Optional.ofNullable(taxon), 
+                                     Optional.ofNullable(name));
+
+        if (synonyms.size() == 1) {
+            synonym = synonyms.get(0);
+        } else if (synonyms.size() != 0) {
+            String[] choices = new String[synonyms.size() + 1];
+            int index = 0;
+            for (index = 0; index < synonyms.size(); index++) {
+                choices[index] = "Edit existing synonym record "
+                        + synonyms.get(index).toString();
+            }
+            choices[index] = "Create new synonym record";
+
+            int choice = selectFromList(choices);
+            if (choice >= 0 && choice < synonyms.size()) {
+                synonym = synonyms.get(choice);                                            
+            } else if (choice != synonyms.size()) {
+                // User does not want to proceed
+                return null;
+            }
+        }
+        if (synonym == null) {
+            synonym = coldp.newSynonym();
+            synonym.setName(name);
+            synonym.setTaxon(taxon);
+        } 
+        if (synonym.getReference() == null && reference != null 
+                && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
+            synonym.setReference(reference);
+        }
+        if (status == null) {
+            synonym.setStatus(readEnum(SynonymStatusEnum.class, "Status", 
+                    (synonym.getStatus() == null) ? "synonym" : synonym.getStatus(), 
+                    false).toString());
+        } else {
+            synonym.setStatus(status);
+        }
+        if (remarks == null) {
+            synonym.setRemarks(readLine("Remarks", synonym.getRemarks(), false));
+        } else {
+            synonym.setRemarks(remarks);
+        }
+
+        setSynonym(synonym);
+        
+        return synonym;
+    }
+
+    private COLDPTaxon addTaxon(COLDataPackage coldp, COLDPName name, COLDPTaxon parent) {
+        taxon = coldp.newTaxon();
+        taxon.setName(name);
+        taxon.setParent(taxon);
+        taxon.fixHierarchy(false, false, false);
+        
+        editTaxon(taxon);
+        
+        setTaxon(taxon);
+        return taxon;
+    }
+    
+    private void editTaxon(COLDPTaxon taxon) {
+        if (reference != null 
+                && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
+            taxon.setReference(reference);
+        }
+        String remarks = taxon.getRemarks();
+        if (remarks == null) {
+            taxon.setRemarks(readLine("Remarks", taxon.getRemarks(), false));
+        } else {
+            taxon.setRemarks(remarks);
+        }
+    }
+    
+    private COLDPNameRelation addNameRelation(COLDataPackage coldp, COLDPName relatedName, String type, String remarks) {
+        COLDPNameRelation nameRelation = null;
+        
+        int nrCount = (name.getNameRelations() == null) ? 0 : name.getNameRelations().size();
+        int rnrCount = (name.getRelatedNameRelations() == null) ? 0 : name.getRelatedNameRelations().size();
+        
+        if (nrCount + rnrCount > 0) {
+            String[] choices = new String[nrCount + rnrCount + 1];
+            int index = 0;
+            while (index < nrCount) {
+                choices[index] = "Edit existing nameRelation record "
+                        + name.getNameRelations().get(index).toString();
+                index++;
+            }
+            while (index < nrCount + rnrCount) {
+                choices[index] = "Edit existing nameRelation record "
+                        + name.getRelatedNameRelations().get(index - nrCount).toString();
+                index++;
+            }
+            choices[index] = "Create new nameRelation record";
+
+            int choice = selectFromList(choices);
+            if (choice >= 0 && choice < nrCount) {
+                nameRelation = name.getNameRelations().get(choice);                                            
+            } else if (choice >= nrCount && choice < nrCount + rnrCount) {
+                nameRelation = name.getRelatedNameRelations().get(choice - nrCount); 
+            } else if (choice != nrCount + rnrCount) {
+                // User does not want to proceed
+                return null;
+            }
+        }
+        if (nameRelation == null) {
+            nameRelation = coldp.newNameRelation();
+            nameRelation.setName(name);
+            nameRelation.setRelatedName(relatedName);
+        } 
+        if (nameRelation.getReference() == null && reference != null 
+                && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
+            nameRelation.setReference(reference);
+        }
+        while (nameRelation.getRelatedName() == null) {
+            String rn = readLine("Related name", "", false);
+            relatedName = findInstance(rn, coldp.getNames(), coldp.getNames().values());
+            if (relatedName == null) {
+                coldp.deleteNameRelation(nameRelation);
+                return null;
+            }
+            nameRelation.setRelatedName(relatedName);
+        }
+        if (type == null) {
+            nameRelation.setType(readEnum(NameRelationTypeEnum.class, "Name relationship type", 
+                    (nameRelation.getType() == null) ? "" : nameRelation.getType(), 
+                    false).toString());
+        } else {
+            nameRelation.setType(type);
+        }
+        if (getConfirmation("Relationship is " + nameRelation.toString() + "\nReverse names")) {
+            COLDPName save = nameRelation.getName();
+            nameRelation.setName(nameRelation.getRelatedName());
+            nameRelation.setRelatedName(save);
+        }
+        if (remarks == null) {
+            nameRelation.setRemarks(readLine("Remarks", nameRelation.getRemarks(), false));
+        } else {
+            nameRelation.setRemarks(remarks);
+        }
+
+        setNameRelation(nameRelation);
+        
+        return nameRelation;
+    }
+    
+    private void editName(COLDataPackage coldp, COLDPName name, COLDPName basionym, COLDPReference reference) {
         COLDPNameReference nameReference = name.getRedundantNameReference(false);
         
-        name.setReference(reference);
+        if ((reference != null && !Objects.equals(reference, name.getReference()) && getConfirmation("Use new reference " + reference.toString()))
+                || (reference == null && name.getReference() != null && getConfirmation("Remove current reference " + name.getReference()))) {
+            name.setReference(reference);
+        }
+        
         name.setBasionym(basionym == null ? name : basionym);
 
-        name.setAuthorship(readLine("Authorship", name.getAuthorship(), false));
+        boolean taxonAffected = false;
+        String authorship = readLine("Authorship", name.getAuthorship(), false);
+        if (!Objects.equals(authorship, name.getAuthorship())) {
+            name.setAuthorship(authorship);
+            taxonAffected = true;
+        }
         RankEnum rank = readEnum(RankEnum.class, "Rank", (name.getRank() == null ? "species" : name.getRank()), false);
-        name.setRank(rank.toString());
+        if (!(Objects.equals(rank, name.getRankEnum()))) {
+            name.setRank(rank.toString());
+            taxonAffected = true;
+        }
         if (rank.isUninomial()) {
-            name.setUninomial(readLine("Uninomial", name.getUninomial(), false));
+            String uninomial = readLine("Uninomial", name.getUninomial(), false);
+            if (!Objects.equals(uninomial, name.getUninomial())) {
+                name.setUninomial(uninomial);
+                taxonAffected = true;
+            }
             name.setScientificName(name.getUninomial());
             name.setGenus(null);
             name.setSpecificEpithet(null);
             name.setInfraspecificEpithet(null);
         } else {
-            name.setUninomial(null);
             String genus = readLine("Genus", name.getGenus(), false);
-            name.setGenus(genus);
             String specificEpithet = readLine("Specific epithet", name.getSpecificEpithet(), false);
-            name.setSpecificEpithet(specificEpithet);
             String infraspecificEpithet = null;
             if (rank.isInfraspecific()) {
                 infraspecificEpithet = readLine("Infraspecific epithet", name.getInfraspecificEpithet(), false);
-                name.setInfraspecificEpithet(infraspecificEpithet);
+            } else {
+                infraspecificEpithet = null;
             }
+            if (!Objects.equals(genus, name.getGenus())
+                    || !Objects.equals(specificEpithet, name.getSpecificEpithet())
+                    || !Objects.equals(infraspecificEpithet, name.getInfraspecificEpithet())) {
+                taxonAffected = true;
+            }
+            name.setUninomial(null);
+            name.setGenus(genus);
+            name.setSpecificEpithet(specificEpithet);
+            name.setInfraspecificEpithet(infraspecificEpithet);
             name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
         }
-        if (reference != null) {
+        if (name.getReference() != null) {
             name.setPublishedInPage(readLine("Published in page", name.getPublishedInPage(), false));
         }
         String year = name.getPublishedInYear();
@@ -734,13 +1051,95 @@ public class InteractiveCommandLine {
         if(nameReference != null && getConfirmation("Edit existing associated name reference: " + nameReference.toString())) {
             editNameReference(nameReference);
         } else if (name.getReference() != null && name.getPublishedInPage() != null && getConfirmation("Create associated name reference", false)) {
-            nameReference = new COLDPNameReference();
+            nameReference = coldp.newNameReference();
             nameReference.setName(name);
-            nameReference.setReference(reference);
+            nameReference.setReference(name.getReference());
             nameReference.setPage(name.getPublishedInPage());
             nameReference.setLink(name.getLink());
             nameReference.setRemarks(name.getRemarks());
             editNameReference(nameReference);
+            setNameReference(nameReference);
+        }
+        if (taxonAffected && name.getTaxon() != null 
+                && getConfirmation("Make corresponding changes to taxon: " 
+                        + name.getTaxon().toString(), false)) {
+            COLDPTaxon taxon = name.getTaxon();
+            COLDPTaxon parent = taxon.getParent();
+            String parentString = null;
+            if (parent == null) {
+                parentString = readLine("Parent for taxon", "", false);
+            } else if (getConfirmation("Change current parent for taxon: " + parent.toString())) {
+                parentString = readLine("Parent", "", false);
+            }
+            if (parentString != null) {
+                parent = findInstance(parentString, null, 
+                        coldp.getTaxa().values().stream()
+                                   .filter(t -> rank.isLowerThan(t.getName().getRankEnum()))
+                                   .collect(Collectors.toList()));
+                if (parent != null 
+                        || (taxon.getParent() != null && getConfirmation("Set taxon to have no parent"))) {
+                    taxon.setParent(parent);
+                }
+            }
+            if (taxon.getChildren() != null) {
+                Set<COLDPTaxon> children = new HashSet<COLDPTaxon>();
+                children.addAll(taxon.getChildren());
+                
+                COLDPTaxon newParentOfChild = null;
+                COLDPTaxon parentForAll = null;
+                for (COLDPTaxon child : children) {
+                    if (parentForAll != null) {
+                        child.setParent(parentForAll);
+                        child.fixHierarchy(true, true, true);
+                    } else {
+                        if (!rank.isHigherThan(child.getName().getRankEnum())) {
+                            String newParentOfChildString 
+                                = readLine("Parent taxon for current child " + child.toString(),
+                                           (newParentOfChild == null ? "" : newParentOfChild.toString()), 
+                                           false);
+                            RankEnum childRank = child.getName().getRankEnum();
+                            // Avoid getting another parent at too low a rank
+                            newParentOfChild = findInstance(newParentOfChildString, null, 
+                                            coldp.getTaxa().values().stream()
+                                                    .filter(t -> t.getName().getRankEnum().isHigherThan(childRank))
+                                                    .collect(Collectors.toList()));
+                            if (newParentOfChild != null) {
+                                child.setParent(newParentOfChild);
+                                child.fixHierarchy(true, true, true);
+                                if (children.size() > 1 
+                                        && getConfirmation("Use same new parent for any remaining children", false)) {
+                                    parentForAll = newParentOfChild;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            taxon.fixHierarchy(false, false, false);
+        } else if (name.getTaxon() == null && (name.getSynonyms() == null || name.getSynonyms().size() == 0)) {
+            if (getConfirmation("Add new taxon for name")) {
+                COLDPTaxon parent = null;
+                if (name.getRankEnum().equals(RankEnum.species)) {
+                    parent = coldp.getTaxonByScientificName(name.getGenus());
+                } else if (name.getRankEnum().inSpeciesGroup()) {
+                    parent = coldp.getTaxonByScientificName(name.getGenus() + " " + name.getSpecificEpithet());
+                }
+                String parentName = readLine("Name of parent taxon", (parent == null) ? null : parent.getName().getScientificName(), false);
+                parent = findInstance(parentName, coldp.getTaxa(), coldp.getTaxa().values());
+                setTaxon(addTaxon(coldp, name, parent));
+            } else if (getConfirmation("Set name as synonym for taxon")) {
+                COLDPTaxon accepted = null;
+                if (taxon != null && getConfirmation("Use current taxon " + taxon.toString())) {
+                    accepted = taxon;
+                } else if (taxon == null) {
+                    String acceptedName = readLine("Name of accepted taxon", null, false);
+                    accepted = findInstance(acceptedName, coldp.getTaxa(), coldp.getTaxa().values());
+                }
+                if (accepted != null) {
+                    taxon = accepted;
+                    addSynonym(coldp, null, null);
+                }
+            }
         }
     }
     
@@ -748,6 +1147,20 @@ public class InteractiveCommandLine {
         nameReference.setPage(readLine("Page", nameReference.getPage(), false));
         nameReference.setLink(readLine("Link", nameReference.getLink(), false));
         nameReference.setRemarks(readLine("Remarks", nameReference.getRemarks(), false));
+    }
+
+    private void editNameRelation(COLDPNameRelation nameRelation) {
+        if (nameRelation.getReference() == null && reference != null 
+                && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
+            nameRelation.setReference(reference);
+        }
+        nameRelation.setType(readEnum(NameRelationTypeEnum.class, "Name relationship type", nameRelation.getType(), false).toString());
+        if (getConfirmation("Relationship is " + nameRelation.toString() + "\nReverse names")) {
+            COLDPName save = nameRelation.getName();
+            nameRelation.setName(nameRelation.getRelatedName());
+            nameRelation.setRelatedName(save);
+        }
+        nameRelation.setRemarks(readLine("Remarks", nameRelation.getRemarks(), false));
     }
 
     private void showError(String s) {
@@ -874,5 +1287,9 @@ public class InteractiveCommandLine {
         nameRelation = null;
         distribution = null;
         region = null;
+    }
+    
+    public PrintWriter getWriter() {
+        return (terminal == null) ? null : terminal.writer();
     }
 }
