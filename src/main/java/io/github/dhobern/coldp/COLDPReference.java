@@ -291,8 +291,12 @@ public class COLDPReference implements TreeRenderable {
         if (!formatted.endsWith(".")) {
             formatted += ".";
         }
-        if (getLink() != null && getLink().length() > 0 && renderType.equals(TreeRenderType.HTML)) {
-            formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+        if (getLink() != null && getLink().length() > 0) {
+            if (renderType.equals(TreeRenderType.HTML)) {
+                formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+            } else {
+                formatted += " " + getLink();
+            }
         }
         writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
     }

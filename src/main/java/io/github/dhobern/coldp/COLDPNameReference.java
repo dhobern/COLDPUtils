@@ -194,9 +194,13 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
         }
 
 
-        if (renderType.equals(TreeRenderType.HTML) && link != null && link.startsWith("http")) {
-            formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
-                    + renderType.wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+        if (link != null && link.startsWith("http")) {
+            if (renderType.equals(TreeRenderType.HTML)) {
+                formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
+                        + renderType.wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+            } else {
+                formatted += page + ": " + link;
+            }            
         } else {
             formatted += renderType.wrapStrong(page);
         }
