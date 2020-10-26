@@ -127,9 +127,11 @@ public class InteractiveCommandLine {
                         if (icl.getName() != null) {
                             COLDPName name = icl.getName();
                             COLDPReference reference = icl.getReference();
+                            COLDPReference selectedReference = null;
                             if (reference != null 
                                     && (name.getReference() == null || !name.getReference().equals(reference))
                                     && icl.getConfirmation("Use currently selected reference " + reference.toString(25, 40) + "?")) {
+                                selectedReference = reference;
                             }
                             COLDPName basionym = name.getBasionym();
                             if (    (basionym == null && icl.getConfirmation("Select basionym?"))
@@ -142,12 +144,16 @@ public class InteractiveCommandLine {
                                     }
                                 }
                             }
-                            icl.editName(coldp, name, basionym, reference);
+                            icl.editName(coldp, name, basionym, selectedReference);
                         }
                         break;
-                        
                     case "t": 
                         icl.setTaxon(icl.findInstance(line, coldp.getTaxa(), coldp.getTaxa().values()));
+                        break;
+                    case "t/": 
+                        if (icl.getTaxon() != null) {
+                            icl.editTaxon(coldp, icl.getTaxon(), null);
+                        }
                         break;
                     case "a": 
                         icl.setRegion(icl.findInstance(line, coldp.getRegions(), coldp.getRegions().values()));
@@ -527,6 +533,31 @@ public class InteractiveCommandLine {
                             icl.getRegion().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
                         }
                         break;
+                    case "r!":
+                        if (icl.getReference() != null) {
+                            icl.getReference().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "s!":
+                        if (icl.getSynonym() != null) {
+                            icl.getSynonym().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "d!":
+                        if (icl.getDistribution() != null) {
+                            icl.getDistribution().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "nr!":
+                        if (icl.getNameReference() != null) {
+                            icl.getNameReference().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "nn!":
+                        if (icl.getNameRelation() != null) {
+                            icl.getNameRelation().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
                     case "s/":
                         COLDPSynonym synonym = icl.getSynonym();
                         if (synonym != null) {
@@ -891,25 +922,38 @@ public class InteractiveCommandLine {
     private COLDPTaxon addTaxon(COLDataPackage coldp, COLDPName name, COLDPTaxon parent) {
         taxon = coldp.newTaxon();
         taxon.setName(name);
-        taxon.setParent(taxon);
-        taxon.fixHierarchy(false, false, false);
         
-        editTaxon(taxon);
+        editTaxon(coldp, taxon, parent);
         
         setTaxon(taxon);
         return taxon;
     }
     
-    private void editTaxon(COLDPTaxon taxon) {
+    private void editTaxon(COLDataPackage coldp, COLDPTaxon taxon, COLDPTaxon parent) {
         if (reference != null 
                 && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
             taxon.setReference(reference);
         }
-        String remarks = taxon.getRemarks();
-        if (remarks == null) {
-            taxon.setRemarks(readLine("Remarks", taxon.getRemarks(), false));
+        if (parent == null) {
+            String currentParentName = taxon.getParent().getName().getScientificName();
+            String parentName = readLine("Parent", (taxon.getParentID() == null) ? "" : currentParentName, false);
+            if (!Objects.equals(parentName, currentParentName)) {
+                parent = findInstance(parentName, coldp.getTaxa(), coldp.getTaxa().values());
+            }
+        }
+        if (parent != null) {
+            taxon.setParent(parent);
+        }
+        taxon.fixHierarchy(false, false, false);
+        taxon.setLifezone(readEnum(EnvironmentEnum.class, "Lifezone", taxon.getLifezone(), false).toString());
+        taxon.setTemporalRangeEnd(readEnum(GeoTimeEnum.class, "Temporal range end", taxon.getTemporalRangeEnd(), false).toString());
+        taxon.setExtinct(readLine("Extinct (Y/N)", taxon.isExtinct() ? "Y" : "N", "^[NY]$", false).equals("Y"));
+        taxon.setRemarks(readLine("Remarks", taxon.getRemarks(), false));
+        taxon.setScrutinizer(readLine("Scrutinizer", taxon.getScrutinizer(), false));
+        if (getConfirmation("Set scrutinizer date to today")) {
+            taxon.setScrutinizerDate(DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()));
         } else {
-            taxon.setRemarks(remarks);
+            taxon.setScrutinizerDate(readLine("Scrutinizer date", taxon.getScrutinizerDate(), "^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$", false));
         }
     }
     
@@ -988,7 +1032,7 @@ public class InteractiveCommandLine {
     private void editName(COLDataPackage coldp, COLDPName name, COLDPName basionym, COLDPReference reference) {
         COLDPNameReference nameReference = name.getRedundantNameReference(false);
         
-        if ((reference != null && !Objects.equals(reference, name.getReference()) && getConfirmation("Use new reference " + reference.toString()))
+        if ((reference != null && !Objects.equals(reference, name.getReference()))
                 || (reference == null && name.getReference() != null && getConfirmation("Remove current reference " + name.getReference()))) {
             name.setReference(reference);
         }

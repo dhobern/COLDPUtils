@@ -32,7 +32,7 @@ public class TreeRenderProperties {
                 (s) -> "_" + s + "_",
                 null, 
                 (s) -> s + ": ", 
-                (s, id) -> s + (id == null ? "" : " (" + id + ")") + ":",
+                (s, id) -> s + (id == null ? "" : " (" + id + ")") + ": ",
                 "");
         
         private final String indentUnit;
