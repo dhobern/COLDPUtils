@@ -45,6 +45,7 @@ public class COLDataPackage {
     private Map<String,COLDPTaxon> taxa;
     private List<COLDPDistribution> distributions;
     private Map<String,COLDPRegion> regions;
+    private List<COLDPSpeciesInteraction> speciesInteractions;
     
     private IdentifierPolicy taxonIdentifierPolicy;
     private IdentifierPolicy nameIdentifierPolicy;
@@ -93,6 +94,12 @@ public class COLDataPackage {
         COLDPDistribution distribution = new COLDPDistribution();
         distributions.add(distribution);
         return distribution;
+    }
+    
+    public COLDPSpeciesInteraction newSpeciesInteraction() {
+        COLDPSpeciesInteraction speciesInteraction = new COLDPSpeciesInteraction();
+        speciesInteractions.add(speciesInteraction);
+        return speciesInteraction;
     }
     
     public COLDPRegion newRegion(String ID) {
@@ -188,6 +195,10 @@ public class COLDataPackage {
 
     public Map<String, COLDPTaxon> getTaxa() {
         return taxa;
+    }
+
+    public List<COLDPSpeciesInteraction> getSpeciesInteractions() {
+        return speciesInteractions;
     }
 
     public List<COLDPTaxon> getRootTaxa() {
@@ -295,6 +306,30 @@ public class COLDataPackage {
         return false;
     }
 
+    public boolean deleteDistribution(COLDPDistribution d) {
+        if (d != null) {
+            d.setTaxon(null);
+            d.setRegion(null);
+            d.setReference(null);
+            distributions.remove(d);
+            return true;
+        }
+        
+        return false;
+    }
+
+    public boolean deleteSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null) {
+            si.setTaxon(null);
+            si.setRelatedTaxon(null);
+            si.setReference(null);
+            speciesInteractions.remove(si);
+            return true;
+        }
+        
+        return false;
+    }
+
     private COLDataPackage() {
     }
     
@@ -349,6 +384,14 @@ public class COLDataPackage {
                 distributions = distributionReader.getList();
             } else {
                 distributions = new ArrayList<>();
+            }
+            
+            if (new File(folderName + "speciesinteraction.csv").exists()) {
+                CSVReader<COLDPSpeciesInteraction> speciesInteractionReader 
+                        = new CSVReader<>(folderName + "speciesinteraction.csv", COLDPSpeciesInteraction.class, ",");
+                speciesInteractions = speciesInteractionReader.getList();
+            } else {
+                speciesInteractions = new ArrayList<>();
             }
             
             for (COLDPReference reference : references.values()) {
@@ -443,7 +486,6 @@ public class COLDataPackage {
             }
             
             for (COLDPDistribution distribution : distributions) {
-                // Region is used in sorting distributions so set this first
                 distribution.setRegion(regions.get(distribution.getArea()));
                 distribution.setTaxon(taxa.get(distribution.getTaxonID()));
                 if (distribution.getReferenceID() != null) {
@@ -453,6 +495,30 @@ public class COLDataPackage {
                     } else {
                         distribution.setReference(reference);
                     }
+                }
+            }
+
+            for (COLDPSpeciesInteraction speciesInteraction : speciesInteractions) {
+                speciesInteraction.setTaxon(taxa.get(speciesInteraction.getTaxonID()));
+                if (speciesInteraction.getRelatedTaxonID() != null) {
+                    COLDPTaxon relatedTaxon = taxa.get(speciesInteraction.getRelatedTaxonID());
+                    if (relatedTaxon == null) {
+                        LOG.error("SpeciesInteraction " + speciesInteraction.getRelatedTaxonID() + " not found for speciesInteraction " + speciesInteraction.toString());
+                    } else {
+                        speciesInteraction.setRelatedTaxon(relatedTaxon);
+                    }
+                }
+                if (speciesInteraction.getReferenceID() != null) {
+                    COLDPReference reference = references.get(speciesInteraction.getReferenceID());
+                    if (reference == null) {
+                        LOG.error("SpeciesInteraction " + speciesInteraction.getReferenceID() + " not found for speciesInteraction " + speciesInteraction.toString());
+                    } else {
+                        speciesInteraction.setReference(reference);
+                    }
+                }
+                if (speciesInteraction.getRelatedTaxonScientificName() != null
+                        && speciesInteraction.getRelatedTaxonLink() == null) {
+                    speciesInteraction.linkToCOL();
                 }
             }
         } catch (UnsupportedEncodingException | FileNotFoundException ex) {
@@ -628,6 +694,15 @@ public class COLDataPackage {
             writer.println(COLDPDistribution.getCsvHeader());
             for(COLDPDistribution distribution : distributions) {
                 writer.println(distribution.toCsv());
+            }
+            writer.close();
+        }
+
+        writer = safeFileOpen(folderName, "speciesinteraction", suffix, overwrite);
+        if (writer != null) {
+            writer.println(COLDPSpeciesInteraction.getCsvHeader());
+            for(COLDPSpeciesInteraction speciesInteraction : speciesInteractions) {
+                writer.println(speciesInteraction.toCsv());
             }
             writer.close();
         }

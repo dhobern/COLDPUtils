@@ -59,6 +59,7 @@ public class InteractiveCommandLine {
     private COLDPNameRelation nameRelation = null;
     private COLDPDistribution distribution = null;
     private COLDPRegion region = null;
+    private COLDPSpeciesInteraction speciesInteraction = null;
     
     private String prompt = "> ";
     
@@ -265,6 +266,33 @@ public class InteractiveCommandLine {
                                     }
                                 }
                             }
+                        }
+                        break;
+                    case "t.i":
+                        {
+                            COLDPTaxon taxon = icl.getTaxon();
+                            if (taxon != null && taxon.getSpeciesInteractions() != null && taxon.getSpeciesInteractions().size() > 0) {
+                                if (taxon.getSpeciesInteractions().size() == 1) {
+                                    icl.setSpeciesInteraction(taxon.getSpeciesInteractions().get(0));
+                                } else {
+                                    String[] speciesInteractions = new String[taxon.getSpeciesInteractions().size()];
+                                    taxon.getSpeciesInteractions().stream().map(nr -> nr.toString()).collect(Collectors.toList()).toArray(speciesInteractions);
+                                    int index = icl.selectFromList(speciesInteractions);
+                                    if (index >= 0 && index < speciesInteractions.length) {
+                                        icl.setSpeciesInteraction(taxon.getSpeciesInteractions().get(index));
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case "i!":
+                        if (icl.getSpeciesInteraction() != null) {
+                            icl.getSpeciesInteraction().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
+                        }
+                        break;
+                    case "i/":
+                        if (icl.getSpeciesInteraction() != null) {
+                            icl.editSpeciesInteraction(icl.getSpeciesInteraction());
                         }
                         break;
                     case "n.s": 
@@ -1207,6 +1235,19 @@ public class InteractiveCommandLine {
         nameRelation.setRemarks(readLine("Remarks", nameRelation.getRemarks(), false));
     }
 
+    private void editSpeciesInteraction(COLDPSpeciesInteraction speciesInteraction) {
+        if (speciesInteraction.getReference() == null && reference != null 
+                && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
+            speciesInteraction.setReference(reference);
+        }
+        speciesInteraction.setRelatedTaxonScientificName(readLine("Related taxon scientific name", 
+                speciesInteraction.getRelatedTaxonScientificName(), false));
+        speciesInteraction.setType(readEnum(SpeciesInteractionTypeEnum.class, "Name relationship type", 
+                speciesInteraction.getType(), false).toString());
+        speciesInteraction.setRemarks(readLine("Remarks", speciesInteraction.getRemarks(), false));
+        speciesInteraction.setRelatedTaxonLink(readLine("Related taxon link", speciesInteraction.getRelatedTaxonLink(), false));
+    }
+
     private void showError(String s) {
         AttributedStringBuilder asb = new AttributedStringBuilder();
         asb.style(AttributedStyle.DEFAULT.background(AttributedStyle.RED).foreground(AttributedStyle.WHITE))
@@ -1249,6 +1290,10 @@ public class InteractiveCommandLine {
             asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.YELLOW))
                .append("D: " + distribution.toString() + "\n");
         }
+        if(speciesInteraction != null) {
+            asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+               .append("I: " + speciesInteraction.toString() + "\n");
+        }
         asb.style(AttributedStyle.DEFAULT)
             .append(guidance + prompt).toAnsi();
         return asb.toAnsi();
@@ -1280,6 +1325,10 @@ public class InteractiveCommandLine {
 
     public void setDistribution(COLDPDistribution distribution) {
         this.distribution = distribution;
+    }
+
+    public void setSpeciesInteraction(COLDPSpeciesInteraction speciesInteraction) {
+        this.speciesInteraction = speciesInteraction;
     }
 
     public void setRegion(COLDPRegion region) {
@@ -1320,6 +1369,10 @@ public class InteractiveCommandLine {
 
     public COLDPRegion getRegion() {
         return region;
+    }
+
+    public COLDPSpeciesInteraction getSpeciesInteraction() {
+        return speciesInteraction;
     }
     
     public void clearContext() {

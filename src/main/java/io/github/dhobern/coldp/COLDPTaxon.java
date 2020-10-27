@@ -55,7 +55,9 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     private COLDPReference reference;
     private List<COLDPSynonym> synonyms;
     private Set<COLDPDistribution> distributions;
-
+    private List<COLDPSpeciesInteraction> speciesInteractions;
+    private List<COLDPSpeciesInteraction> relatedSpeciesInteractions;
+    
     public COLDPTaxon() {
     }
 
@@ -204,6 +206,44 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     void deregisterChild(COLDPTaxon child) {
         if (child != null && children != null) {
             children.remove(child);
+        }
+    }
+
+    void registerSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null) {
+            if (speciesInteractions == null) {
+                speciesInteractions = new ArrayList<>();
+            }
+            speciesInteractions.add(si);
+        }
+    }
+ 
+    void deregisterSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null && speciesInteractions != null) {
+            speciesInteractions.remove(si);
+        }
+    }
+    
+    public List<COLDPSpeciesInteraction> getSpeciesInteractions() {
+        return speciesInteractions;
+    }
+    
+    public List<COLDPSpeciesInteraction> getRelatedSpeciesInteractions() {
+        return relatedSpeciesInteractions;
+    }
+
+    void registerRelatedSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null) {
+            if (relatedSpeciesInteractions == null) {
+                relatedSpeciesInteractions = new ArrayList<>();
+            }
+            relatedSpeciesInteractions.add(si);
+        }
+    }
+ 
+    void deregisterRelatedSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null && relatedSpeciesInteractions != null) {
+            relatedSpeciesInteractions.remove(si);
         }
     }
 
@@ -546,7 +586,11 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         }
 
         if (distributions != null) {
-            renderDistributions(writer,  new TreeRenderProperties(context, this, childContextType), renderType);
+            renderDistributions(writer, new TreeRenderProperties(context, this, childContextType), renderType);
+        }
+
+        if (speciesInteractions != null) {
+            renderSpeciesInteractions(writer, new TreeRenderProperties(context, this, childContextType), renderType);
         }
 
         if (context.getReferenceList().size() > 0) {
@@ -603,6 +647,19 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
         for (COLDPDistribution distribution : distributions) {
             distribution.render(writer, new TreeRenderProperties(context, this, ContextType.Distribution));
+        }
+        
+        String closeNode = renderType.closeNode();
+        if (closeNode.length() > 0) {
+            writer.println(context.getIndent() + closeNode);
+        }
+    }    
+
+    private void renderSpeciesInteractions(PrintWriter writer, TreeRenderProperties context, TreeRenderType renderType) {
+        writer.println(context.getIndent() + renderType.openNode("SpeciesInteractions") + "Species interactions:");
+
+        for (COLDPSpeciesInteraction speciesInteraction : speciesInteractions) {
+            speciesInteraction.render(writer, context);
         }
         
         String closeNode = renderType.closeNode();

@@ -130,7 +130,7 @@ public class TreeRenderProperties {
     } 
     
     public enum ContextType {
-        None, HigherTaxa, Root, Name, NameRelation, References, Reference, NameReference, Taxon, Synonyms, Synonym, Region, Distribution;
+        None, HigherTaxa, Root, Name, NameRelation, References, Reference, NameReference, Taxon, Synonyms, Synonym, Region, Distribution, SpeciesInteraction;
     } 
     
     private static class TreeRenderNode {

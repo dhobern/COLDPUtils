@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public class COLDPReference implements TreeRenderable {
     private Set<COLDPTaxon> taxa;
     private List<COLDPSynonym> synonyms;
     private List<COLDPDistribution> distributions;
+    private List<COLDPSpeciesInteraction> speciesInteractions;
 
     public COLDPReference() {
     }
@@ -211,6 +213,21 @@ public class COLDPReference implements TreeRenderable {
 
     public List<COLDPDistribution> getDistributions() {
         return distributions;
+    }
+
+    void registerSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null) {
+            if (speciesInteractions == null) {
+                speciesInteractions = new ArrayList<>();
+            }
+            speciesInteractions.add(si);
+        }
+    }
+ 
+    void deregisterSpeciesInteraction(COLDPSpeciesInteraction si) {
+        if (si != null && speciesInteractions != null) {
+            speciesInteractions.remove(si);
+        }
     }
 
     @Override
