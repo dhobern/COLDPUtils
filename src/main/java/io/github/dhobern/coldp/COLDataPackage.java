@@ -516,10 +516,10 @@ public class COLDataPackage {
                         speciesInteraction.setReference(reference);
                     }
                 }
-                if (speciesInteraction.getRelatedTaxonScientificName() != null
-                        && speciesInteraction.getRelatedTaxonLink() == null) {
-                    speciesInteraction.linkToCOL();
-                }
+//                if (speciesInteraction.getRelatedTaxonScientificName() != null
+//                       && speciesInteraction.getRelatedTaxonLink() == null) {
+//                    speciesInteraction.linkToCOL();
+//                }
             }
         } catch (UnsupportedEncodingException | FileNotFoundException ex) {
             java.util.logging.Logger.getLogger(COLDataPackage.class.getName()).log(Level.SEVERE, null, ex);

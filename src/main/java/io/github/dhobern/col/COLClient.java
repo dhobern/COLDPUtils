@@ -73,6 +73,7 @@ public class COLClient {
                 requestData.put("q", searchString);
                 requestData.put("fuzzy", Boolean.FALSE);
                 requestData.put("type", "EXACT");
+                requestData.put("content", "SCIENTIFIC_NAME");
                 HttpRequest request = HttpRequest.newBuilder()
                         .GET()
                         .uri(URI.create(buildURL(requestData, COL_API, "dataset/", datasetKey, "/nameusage/search")))

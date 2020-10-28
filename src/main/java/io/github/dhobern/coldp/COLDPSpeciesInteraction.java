@@ -14,7 +14,9 @@ import io.github.dhobern.coldp.TreeRenderProperties.TreeRenderType;
 import static io.github.dhobern.utils.StringUtils.*;
 import java.io.PrintWriter;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -331,11 +333,22 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
             COLClient client = new COLClient();
             NameUsageSearchResponse response = client.searchForNameUsage(relatedTaxonScientificName);
             if (response != null && response.getResult() != null) {
-                if (response.getResult().size() == 1) {
+                List<NameUsageSearchResult> usages 
+                        = response.getResult().stream().filter(u 
+                                -> u.getUsage().getName().getScientificName()
+                                        .equals(relatedTaxonScientificName))
+                            .collect(Collectors.toList());
+                if (usages.size() == 1) {
                     NameUsageSearchResult result = response.getResult().get(0);
-                    relatedTaxonLink = client.getWebUrlForTaxonKey(result.getId());
-                    relatedTaxonFullName = result.getUsage().getLabel();
-                    relatedTaxonHTMLName = result.getUsage().getLabelHtml();
+                    if (result.getUsage().getAccepted() != null) {
+                        relatedTaxonLink = client.getWebUrlForTaxonKey(result.getUsage().getAccepted().getId());
+                        relatedTaxonFullName = result.getUsage().getAccepted().getLabel();
+                        relatedTaxonHTMLName = result.getUsage().getAccepted().getLabelHtml();
+                    } else {
+                        relatedTaxonLink = client.getWebUrlForTaxonKey(result.getId());
+                        relatedTaxonFullName = result.getUsage().getLabel();
+                        relatedTaxonHTMLName = result.getUsage().getLabelHtml();
+                    }
                     if (result.getClassification() != null) {
                         for (Classification classification : result.getClassification()) {
                             switch (classification.getRank()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 dhobern@gmail.com.
+ * Copyright 2020 Platyptilia.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.github.dhobern.col;
 
 import java.util.HashMap;
@@ -41,11 +42,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "scrutinizerDate",
     "extinct",
     "label",
-    "labelHtml",
-    "accepted",
-    "homotypic"
+    "labelHtml"
 })
-public class Usage {
+public class Accepted {
 
     @JsonProperty("created")
     private String created;
@@ -79,10 +78,6 @@ public class Usage {
     private String label;
     @JsonProperty("labelHtml")
     private String labelHtml;
-    @JsonProperty("accepted")
-    private Accepted accepted;
-    @JsonProperty("homotypic")
-    private Boolean homotypic;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
@@ -244,26 +239,6 @@ public class Usage {
     @JsonProperty("labelHtml")
     public void setLabelHtml(String labelHtml) {
         this.labelHtml = labelHtml;
-    }
-
-    @JsonProperty("accepted")
-    public Accepted getAccepted() {
-        return accepted;
-    }
-
-    @JsonProperty("accepted")
-    public void setAccepted(Accepted accepted) {
-        this.accepted = accepted;
-    }
-
-    @JsonProperty("homotypic")
-    public Boolean getHomotypic() {
-        return homotypic;
-    }
-
-    @JsonProperty("homotypic")
-    public void setHomotypic(Boolean homotypic) {
-        this.homotypic = homotypic;
     }
 
     @JsonAnyGetter
