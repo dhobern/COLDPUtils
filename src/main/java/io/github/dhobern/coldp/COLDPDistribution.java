@@ -1,4 +1,4 @@
-/*
+    /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -59,9 +59,17 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
             }
             this.taxon = taxon;
             taxonID = null;
-            if (taxon != null) {
-                taxon.registerDistribution(this);
-            }
+            
+            // Defer registration until we have both the region and the taxon
+            // Both are needed for the insertion into the TreeSet.
+            handleRegistrations();
+        }
+    }
+    
+    private void handleRegistrations() {
+        if (taxon != null && region != null) {
+            taxon.registerDistribution(this);
+            region.registerDistribution(this);
         }
     }
 
@@ -88,9 +96,10 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
             }
             this.region = region;
             area = null;
-            if (region != null) {
-                region.registerDistribution(this);
-            }
+            
+            // Defer registration until we have both the region and the taxon
+            // Both are needed for the insertion into the TreeSet.
+            handleRegistrations();
         }
     }
 
@@ -220,7 +229,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
             }
         }
 
-        if (remarks != null) {
+        if (remarks != null && remarks.length() > 0) {
             if (note == null) {
                 note = remarks;
             } else {

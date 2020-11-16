@@ -316,10 +316,16 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
         }
         
         if (type != null) {
-            if (note != null) {
-                formatted = upperFirst(type) + " (" +  note + "): " + formatted;
+            String typeString;
+            if (type.equals("eats")) {
+                typeString = "Feeds on";
             } else {
-                formatted = upperFirst(type) + ": " + formatted;
+                typeString = upperFirst(type);
+            }
+            if (note != null) {
+                formatted = typeString + " (" +  note + "): " + formatted;
+            } else {
+                formatted = typeString + ": " + formatted;
             }
         }
         
@@ -338,6 +344,9 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
                                 -> u.getUsage().getName().getScientificName()
                                         .equals(relatedTaxonScientificName))
                             .collect(Collectors.toList());
+                if (usages.size() > 1) {
+                    usages = usages.stream().filter(u -> u.getUsage().getAccepted() == null).collect(Collectors.toList());
+                }
                 if (usages.size() == 1) {
                     NameUsageSearchResult result = response.getResult().get(0);
                     if (result.getUsage().getAccepted() != null) {

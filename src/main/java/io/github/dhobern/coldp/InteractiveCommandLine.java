@@ -295,6 +295,25 @@ public class InteractiveCommandLine {
                             icl.editSpeciesInteraction(icl.getSpeciesInteraction());
                         }
                         break;
+                    case "i+":
+                        if (icl.getTaxon() != null) {
+                            COLDPSpeciesInteraction speciesInteraction = coldp.newSpeciesInteraction();
+                            speciesInteraction.setTaxon(icl.getTaxon());
+                            speciesInteraction.setReference(icl.getReference());
+                            icl.editSpeciesInteraction(speciesInteraction);
+                            icl.setSpeciesInteraction(speciesInteraction);
+                        }
+                        break;
+                    case "i<":
+                        if (coldp.getSpeciesInteractions() != null) {
+                            for (COLDPSpeciesInteraction speciesInteraction : coldp.getSpeciesInteractions()) {
+                                if (speciesInteraction.getRelatedTaxonScientificName() != null
+                                   && speciesInteraction.getRelatedTaxonHTMLName() == null) {
+                                    speciesInteraction.linkToCOL();
+                                }
+                            }
+                        }
+                        break;
                     case "n.s": 
                         {
                             COLDPName name = icl.getName();
@@ -864,8 +883,8 @@ public class InteractiveCommandLine {
         }
         if (distribution == null) {
             distribution = coldp.newDistribution();
-            distribution.setRegion(region);
             distribution.setTaxon(taxon);
+            distribution.setRegion(region);
         } 
         if (distribution.getReference() == null) {
             distribution.setReference(reference);
@@ -1240,8 +1259,12 @@ public class InteractiveCommandLine {
                 && getConfirmation("Use currently selected reference " + reference.toString(20, 40), false)) {
             speciesInteraction.setReference(reference);
         }
+        String scientificName = speciesInteraction.getRelatedTaxonScientificName();
         speciesInteraction.setRelatedTaxonScientificName(readLine("Related taxon scientific name", 
                 speciesInteraction.getRelatedTaxonScientificName(), false));
+        if (!Objects.equals(scientificName, speciesInteraction.getRelatedTaxonScientificName())) {
+            speciesInteraction.linkToCOL();
+        }
         speciesInteraction.setType(readEnum(SpeciesInteractionTypeEnum.class, "Name relationship type", 
                 speciesInteraction.getType(), false).toString());
         speciesInteraction.setRemarks(readLine("Remarks", speciesInteraction.getRemarks(), false));
