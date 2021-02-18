@@ -188,21 +188,19 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
 
         formatted += ": " + reference.getAuthor();
         if (reference.getYear() != null) {
-            formatted += " (" + reference.getYear() + "), ";
-        } else {
-            formatted += ", ";
+            formatted += " (" + reference.getYear() + ")";
         }
 
-
         if (link != null && link.startsWith("http")) {
+            String pageTest = (page == null) ? "Link" : page;
             if (renderType.equals(TreeRenderType.HTML)) {
-                formatted += "<a href=\"" + link + "\" target=\"_blank\">" 
+                formatted += ", <a href=\"" + link + "\" target=\"_blank\">" 
                         + renderType.wrapStrong(page) + " <i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
             } else {
-                formatted += page + ": " + link;
+                formatted += ", " + page + ": " + link;
             }            
-        } else {
-            formatted += renderType.wrapStrong(page);
+        } else if (page != null) {
+            formatted += ", " + renderType.wrapStrong(page);
         }
 
         writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
