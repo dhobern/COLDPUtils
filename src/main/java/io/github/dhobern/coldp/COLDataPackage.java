@@ -19,6 +19,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -213,7 +214,8 @@ public class COLDataPackage {
 
     public COLDPName getNameByScientificName(String scientificName) {
         for (COLDPName name : names.values()) {
-            if (name.getScientificName().equals(scientificName)) {
+            if (    name.getScientificName() != null &&
+                    name.getScientificName().equals(scientificName)) {
                 return name;
             }
         }
@@ -318,6 +320,24 @@ public class COLDataPackage {
         return false;
     }
 
+    public boolean deleteSynonym(COLDPSynonym syn) {
+        if (syn != null) {
+            if (syn.getTaxon() != null) {
+                syn.getTaxon().deregisterSynonym(syn);
+            }
+            if (syn.getName() != null) {
+                syn.getName().deregisterSynonym(syn);
+            }
+            syn.setTaxon(null);
+            syn.setName(null);
+            syn.setReference(null);
+            synonyms.remove(syn);
+            return true;
+        }
+        
+        return false;
+    }
+    
     public boolean deleteSpeciesInteraction(COLDPSpeciesInteraction si) {
         if (si != null) {
             si.setTaxon(null);
@@ -329,50 +349,149 @@ public class COLDataPackage {
         
         return false;
     }
+    
+    public boolean deleteTaxon(COLDPTaxon t) {
+        return deleteTaxon(t, false);
+    }
+    
+    public boolean deleteTaxon(COLDPTaxon t, boolean recurse) {
+        if (t != null) {
+            COLDPTaxon taxon = taxa.get(t.getID());
+            if (taxon != null && t == taxon) {
+                COLDPTaxon parent = taxon.getParent();
+                Set<COLDPTaxon> children = taxon.getChildren();
+                while (children != null && children.size() > 0) {
+                    if (recurse) {
+                        deleteName(children.iterator().next().getName());
+                    } else {
+                        children.iterator().next().setParent(parent);
+                    }
+                }
+                taxon.setReference(null);
+                Set<COLDPDistribution> dists = taxon.getDistributions();
+                while (dists != null && dists.size() > 0) {
+                    deleteDistribution(dists.iterator().next());
+                }
+                List<COLDPSpeciesInteraction> sis = taxon.getSpeciesInteractions();
+                while (sis != null && sis.size() > 0) {
+                    deleteSpeciesInteraction(sis.get(0));
+                }
+                sis = taxon.getRelatedSpeciesInteractions();
+                while (sis != null && sis.size() > 0) {
+                    deleteSpeciesInteraction(sis.get(0));
+                }
+                if (parent != null) {
+                    taxon.setParent(null);
+                }
+                taxon.setName(null);
+                taxa.remove(taxon.getID());
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    public boolean deleteName(COLDPName n) {
+        return deleteName(n, false);
+    }
+    
+    public boolean deleteName(COLDPName n, boolean recurse) {
+        if (n != null) {
+            COLDPName name = names.get(n.getID());
+            if (name != null && n == name) {
+                List<COLDPSynonym> syns = name.getSynonyms();
+                while (syns != null && syns.size() > 0) {
+                    deleteSynonym(syns.get(0));
+                }
+                if (name.getTaxon() != null) {
+                    deleteTaxon(name.getTaxon(), recurse);
+                }
+                name.setReference(null);
+                List<COLDPNameRelation> nrels = name.getNameRelations();
+                while (nrels != null && nrels.size() > 0) {
+                    deleteNameRelation(nrels.get(0));
+                }
+                List<COLDPNameRelation> rnrels = name.getRelatedNameRelations();
+                while (rnrels != null && rnrels.size() > 0) {
+                    deleteNameRelation(rnrels.get(0));
+                }
+                List<COLDPNameReference> nrefs = name.getNameReferences();
+                while (nrefs != null && nrefs.size() > 0) {
+                    deleteNameReference(nrefs.get(0));
+                }
+                Set<COLDPName> combs = name.getCombinations();
+                while (combs != null && combs.size() > 0) {
+                    combs.iterator().next().setBasionym(null);
+                }
+                name.setBasionym(null);
+                names.remove(name.getID());
+                return true;
+            }
+        }
+        
+        return false;
+    }
 
     private COLDataPackage() {
     }
     
     public COLDataPackage(String folderName) {
-        this(folderName, null);
+        this(folderName, null, ",");
+    }
+
+    public COLDataPackage(String folderName, String separator) {
+        this(folderName, null, separator);
     }
 
     public COLDataPackage(String folderName, IdentifierType identifierType) {
+        this(folderName, identifierType, ",");
+    }
+
+    public COLDataPackage(String folderName, IdentifierType identifierType, String separator) {
         if (!folderName.endsWith("/")) {
             folderName += "/";
         }
-            
+        
         taxonIdentifierPolicy = new IdentifierPolicy(identifierType);
         nameIdentifierPolicy = new IdentifierPolicy(identifierType);
         referenceIdentifierPolicy = new IdentifierPolicy(identifierType);
 
         try {
             CSVReader<COLDPReference> referenceReader 
-                    = new CSVReader<>(folderName + "reference.csv", COLDPReference.class, ",");
+                    = new CSVReader<>(folderName + "reference.csv", COLDPReference.class, separator);
             references = referenceReader.getMap(COLDPReference::getID);
 
             CSVReader<COLDPName> nameReader
-                    = new CSVReader<>(folderName + "name.csv", COLDPName.class, ",");
+                    = new CSVReader<>(folderName + "name.csv", COLDPName.class, separator);
             names = nameReader.getMap(COLDPName::getID);
             
-            CSVReader<COLDPNameReference> nameReferenceReader 
-                    = new CSVReader<>(folderName + "namereference.csv", COLDPNameReference.class, ",");
-            nameReferences = nameReferenceReader.getList();
+            if (new File(folderName + "namereference.csv").exists()) {
+                CSVReader<COLDPNameReference> nameReferenceReader 
+                        = new CSVReader<>(folderName + "namereference.csv", COLDPNameReference.class, separator);
+                nameReferences = nameReferenceReader.getList();
+            } else {
+                nameReferences = new ArrayList<>();
+            }
 
-            CSVReader<COLDPNameRelation> nameRelationReader 
-                    = new CSVReader<>(folderName + "namerelation.csv", COLDPNameRelation.class, ",");
-            nameRelations = nameRelationReader.getList();
+            if (new File(folderName + "namerelation.csv").exists()) {
+                CSVReader<COLDPNameRelation> nameRelationReader 
+                        = new CSVReader<>(folderName + "namerelation.csv", COLDPNameRelation.class, separator);
+                nameRelations = nameRelationReader.getList();
+            } else {
+                nameRelations = new ArrayList<>();
+            }
  
             CSVReader<COLDPTaxon> taxonReader 
-                    = new CSVReader<>(folderName + "taxon.csv", COLDPTaxon.class, ",");
+                    = new CSVReader<>(folderName + "taxon.csv", COLDPTaxon.class, separator);
             taxa = taxonReader.getMap(COLDPTaxon::getID);
 
-            CSVReader<COLDPSynonym> synonymReader = new CSVReader<>(folderName + "synonym.csv", COLDPSynonym.class, ",");
+            CSVReader<COLDPSynonym> synonymReader = new CSVReader<>(folderName + "synonym.csv", COLDPSynonym.class, separator);
             synonyms = synonymReader.getList();
  
             if (new File(folderName + "region.csv").exists()) {
                 CSVReader<COLDPRegion> regionReader 
-                        = new CSVReader<>(folderName + "region.csv", COLDPRegion.class, ",");
+                        = new CSVReader<>(folderName + "region.csv", COLDPRegion.class, separator);
                 regions = regionReader.getMap(COLDPRegion::getID);
             } else {
                 regions = new HashMap<>();
@@ -380,7 +499,7 @@ public class COLDataPackage {
 
             if (new File(folderName + "distribution.csv").exists()) {
                 CSVReader<COLDPDistribution> distributionReader 
-                        = new CSVReader<>(folderName + "distribution.csv", COLDPDistribution.class, ",");
+                        = new CSVReader<>(folderName + "distribution.csv", COLDPDistribution.class, separator);
                 distributions = distributionReader.getList();
             } else {
                 distributions = new ArrayList<>();
@@ -388,7 +507,7 @@ public class COLDataPackage {
             
             if (new File(folderName + "speciesinteraction.csv").exists()) {
                 CSVReader<COLDPSpeciesInteraction> speciesInteractionReader 
-                        = new CSVReader<>(folderName + "speciesinteraction.csv", COLDPSpeciesInteraction.class, ",");
+                        = new CSVReader<>(folderName + "speciesinteraction.csv", COLDPSpeciesInteraction.class, separator);
                 speciesInteractions = speciesInteractionReader.getList();
             } else {
                 speciesInteractions = new ArrayList<>();
@@ -701,6 +820,27 @@ public class COLDataPackage {
                 writer.println(speciesInteraction.toCsv());
             }
             writer.close();
+        }
+    }
+
+    COLDPName findNameByGenderAgnosticScientific(String scientificName) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    void pruneTaxon(COLDPTaxon taxon) {
+        if (taxon != null && taxa.get(taxon.getID()).equals(taxon)) {
+            COLDPTaxon parent = taxon.getParent();
+            if (parent != null) {
+                while (parent.getChildren().size() > 1) {
+                    for (COLDPTaxon child : parent.getChildren()) {
+                        if (!Objects.equals(taxon, child)) {
+                            deleteName(child.getName());
+                            break;
+                        }
+                    }
+                }
+                pruneTaxon(parent);
+            }
         }
     }
 }

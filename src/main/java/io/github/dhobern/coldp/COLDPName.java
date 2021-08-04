@@ -141,6 +141,8 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
                 String r = rank.toLowerCase();
                 if (r.equals("class")) {
                     r = "clazz";
+                } else if (r.equals("forma")) {
+                    r = "form";
                 }
                 rankEnum = RankEnum.valueOf(r.toLowerCase());
             } catch (Exception e) {
@@ -499,7 +501,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         String synonymRemarks = null;
         if (synonym != null) {
             synonymRemarks = safeTrim(renderType.linkURLs(synonym.getRemarks()));
-            if(synonymRemarks == null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
+            if(synonymRemarks == null && synonym.getStatus() != null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
                 synonymRemarks = upperFirst(synonym.getStatus());
             }
         }
@@ -564,24 +566,26 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
 
     public static String formatName(COLDPName name, TreeRenderType renderType) {
         String scientificName = name.getScientificName();
-        switch (name.getRank()) {
-            case "genus":
-            case "species":
-            case "subspecies":
-                scientificName = renderType.wrapEmphasis(scientificName);
-                break;
-            case "variety":
-                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " var. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
-                break;
-            case "form":
-                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " f. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
-                break;
-            case "aberration":
-                scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
-                        + " ab. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
-                break;
+        if (name.getRank() != null) {
+            switch (name.getRank()) {
+                case "genus":
+                case "species":
+                case "subspecies":
+                    scientificName = renderType.wrapEmphasis(scientificName);
+                    break;
+                case "variety":
+                    scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                            + " var. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
+                    break;
+                case "form":
+                    scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                            + " f. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
+                    break;
+                case "aberration":
+                    scientificName = renderType.wrapEmphasis(name.getGenus() + " " + name.getSpecificEpithet()) 
+                            + " ab. " + renderType.wrapEmphasis(name.getInfraspecificEpithet());
+                    break;
+            }
         }
         
         String authorship = name.getAuthorship();

@@ -66,7 +66,7 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
     public void setTaxon(COLDPTaxon taxon) {
         if (!Objects.equals(this.taxon, taxon)) {
             if (this.taxon != null) {
-                taxon.deregisterSpeciesInteraction(this);
+                this.taxon.deregisterSpeciesInteraction(this);
             }
             this.taxon = taxon;
             taxonID = null;

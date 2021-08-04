@@ -30,6 +30,8 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     private COLDPTaxon taxon;
     private COLDPName name;
     private COLDPReference reference;
+    
+    private String equalityString = null;
 
     public COLDPSynonym() {
     }
@@ -53,7 +55,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     public void setTaxon(COLDPTaxon taxon) {
         if (!Objects.equals(this.taxon, taxon)) {
             if (this.taxon != null) {
-                taxon.deregisterSynonym(this);
+                this.taxon.deregisterSynonym(this);
             }
             taxonID = null;
             this.taxon = taxon;
@@ -61,6 +63,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
                 taxon.registerSynonym(this);
             }
         }
+        updateEqualityString();
     }
 
     public String getNameID() {
@@ -82,7 +85,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     public void setName(COLDPName name) {
         if (!Objects.equals(this.name, name)) {
             if (this.name != null) {
-                name.deregisterSynonym(this);
+                this.name.deregisterSynonym(this);
             }
             this.name = name;
             nameID = null;
@@ -90,6 +93,18 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
                 name.registerSynonym(this);
             }
         }
+    }
+    
+    private void updateEqualityString() {
+        if (taxon != null && name != null) {
+            equalityString = name.getID() + "/" + taxon.getID();
+        } else {
+            equalityString = null;
+        }
+    }
+    
+    public String getEqualityString() {
+        return equalityString;
     }
 
     public String getStatus() {
@@ -163,19 +178,16 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
         if (!Objects.equals(this.status, other.status)) {
             return false;
         }
-        if (!Objects.equals(this.getTaxonID(), other.getTaxonID())) {
+        if (equalityString == null && other.getEqualityString() == null) {
+            return true;
+        }
+        if (equalityString == null || other.getEqualityString() == null) {
             return false;
         }
-        if (!Objects.equals(this.getNameID(), other.getNameID())) {
-            return false;
+        if (!Objects.equals(equalityString, other.getEqualityString())) {
+            return true;
         }
-        if (!Objects.equals(this.getReferenceID(), other.getReferenceID())) {
-            return false;
-        }
-        if (!Objects.equals(this.remarks, other.remarks)) {
-            return false;
-        }
-        return true;
+        return false;
     }
 
     @Override

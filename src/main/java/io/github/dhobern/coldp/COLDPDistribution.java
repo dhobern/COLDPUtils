@@ -55,7 +55,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     public void setTaxon(COLDPTaxon taxon) {
         if (!Objects.equals(this.taxon, taxon)) {
             if (this.taxon != null) {
-                taxon.deregisterDistribution(this);
+                this.taxon.deregisterDistribution(this);
             }
             this.taxon = taxon;
             taxonID = null;
@@ -92,7 +92,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
     public void setRegion(COLDPRegion region) {
         if (!Objects.equals(this.region, region)) {
             if (this.region != null) {
-                taxon.deregisterDistribution(this);
+                this.region.deregisterDistribution(this);
             }
             this.region = region;
             area = null;
@@ -199,7 +199,7 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
 
     @Override
     public String toString() {
-        return "[" + taxon.toString() + "] " + status + " in [" + region.toString() + "]"
+        return "[" + (taxon == null ? "" : taxon.toString()) + "] " + status + " in [" + (region == null ? "" : region.toString()) + "]"
                 + (reference == null ? "" : " from [" + reference.toString(15, 0) + "]");
     }
 

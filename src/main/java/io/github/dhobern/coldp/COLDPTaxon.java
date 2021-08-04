@@ -190,7 +190,9 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     
     public Set<COLDPTaxon> getChildrenSorted() {
         TreeSet<COLDPTaxon> sorted = new TreeSet<>(new AlphabeticalSortByScientificName());
-        sorted.addAll(children);
+        if (children != null) {
+            sorted.addAll(children);
+        }
         return sorted;
     }
 
@@ -445,7 +447,25 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
  
     void deregisterSynonym(COLDPSynonym synonym) {
         if (synonym != null && synonyms != null) {
-            synonyms.remove(synonym);
+            if (!synonyms.remove(synonym)) {
+                System.err.println("Failed to remove synonym from taxon " + ID);
+                if (name != null) {
+                    System.err.println("Taxon name " + name.getScientificName());
+                }
+                if (synonym.getName() != null) {
+                    System.err.println("Synonym name " + synonym.getName().getScientificName());
+                }
+                int i = 0;
+                for (COLDPSynonym s : synonyms) {
+                    if (s.getTaxon() != null && s.getTaxon().getName() != null) {
+                        System.err.println("Synonym[" + i + "] taxon name " + s.getTaxon().getName().getScientificName());
+                    }
+                    if (s.getName() != null) {
+                        System.err.println("Synonym[" + i + "] name " + s.getName().getScientificName());
+                    }
+                    i++;
+                }
+            }
         }
     }
 

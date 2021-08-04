@@ -50,6 +50,36 @@ import org.slf4j.LoggerFactory;
  */
 public class InteractiveCommandLine {
     private static final Logger LOG = LoggerFactory.getLogger(InteractiveCommandLine.class);
+
+    private static void subtractPackage(COLDataPackage coldp, String packageName, String separator, boolean ignoreGender) {
+        COLDataPackage coldpSubtract = new COLDataPackage(packageName, separator);
+        for (COLDPName n : coldpSubtract.getNames().values()){
+            if (n.getRankEnum().inSpeciesGroup()) {
+                COLDPName name;
+                if (ignoreGender) {
+                    name = coldp.findNameByGenderAgnosticScientific(n.getScientificName());
+                } else {
+                    name = coldp.getNameByScientificName(n.getScientificName());
+                }
+                if (name != null) {
+                    COLDPTaxon parent = null;
+                    if (name.getTaxon() != null) {
+                        parent = name.getTaxon().getParent();
+                    }
+                    coldp.deleteName(name);
+                    while (parent != null) {
+                        if (parent.getChildren().size() == 0) {
+                            name = parent.getName();
+                            parent = parent.getParent();
+                            coldp.deleteName(name);
+                        } else {
+                            parent = null;
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     private COLDPTaxon taxon = null;
     private COLDPName name = null;
@@ -69,8 +99,13 @@ public class InteractiveCommandLine {
     public static void main(String[] args) {
         InteractiveCommandLine icl = new InteractiveCommandLine();
         String coldpFolderName = (args.length > 0) ? args[0] : "mockdata";
+        String separator = ",";
+        
+        if (args.length > 1 && Boolean.valueOf(args[1])) {
+            separator = "\t";
+        }
         String coldpName = coldpFolderName;
-        COLDataPackage coldp = new COLDataPackage(coldpName);
+        COLDataPackage coldp = new COLDataPackage(coldpName, separator);
         int i = coldpName.lastIndexOf("/");
         if (i > 0) {
             coldpName = coldpName.substring(i + 1);
@@ -156,6 +191,11 @@ public class InteractiveCommandLine {
                             icl.editTaxon(coldp, icl.getTaxon(), null);
                         }
                         break;
+                    case "t%": 
+                        if (icl.getTaxon() != null) {
+                            coldp.pruneTaxon(icl.getTaxon());
+                        }
+                        break;
                     case "a": 
                         icl.setRegion(icl.findInstance(line, coldp.getRegions(), coldp.getRegions().values()));
                         break;
@@ -190,6 +230,13 @@ public class InteractiveCommandLine {
                             icl.setNameReference(nameReference);
                         }
                         break;
+                    case "nr-":
+                        if (icl.getNameReference() != null && icl.getConfirmation("Delete name reference " + icl.getNameReference().toString() + "?")) {
+			    COLDPNameReference nameReference = icl.getNameReference();
+                            icl.setNameReference(null);
+                            coldp.deleteNameReference(nameReference);
+                        }
+			break;
                     case "nn":
                         {
                             COLDPName name = icl.getName();
@@ -399,6 +446,7 @@ public class InteractiveCommandLine {
                             icl.setReference(null);
                             coldp.deleteReference(reference);
                         }
+			break;
                     case "w":
                         coldp.write(coldpFolderName, "");
                         break;
@@ -575,6 +623,20 @@ public class InteractiveCommandLine {
                             icl.getName().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
                         }
                         break;
+                    case "n-":
+                        if (icl.getName() != null && icl.getConfirmation("Delete name")) {
+                            coldp.deleteName(icl.getName());
+                            icl.setTaxon(null);
+                            icl.setName(null);
+                        }
+                        break;
+                    case "t-":
+                        if (icl.getTaxon() != null && icl.getConfirmation("Delete taxon")) {
+                            coldp.deleteTaxon(icl.getTaxon());
+                            icl.setTaxon(null);
+                        }
+                        break;
+
                     case "a!":
                         if (icl.getRegion() != null) {
                             icl.getRegion().render(icl.getWriter(), new TreeRenderProperties(TreeRenderType.TEXT, ContextType.None));
@@ -637,6 +699,26 @@ public class InteractiveCommandLine {
                         if (icl.getTaxon() != null && icl.getName() != null) {
                             icl.addSynonym(coldp, null, null);
                         }
+                        break;
+                    case "x":
+                        if (icl.getConfirmation("Exclude species and names from package '" + line + "'")) {
+                            subtractPackage(coldp, line, ",", false);
+                        } 
+                        break;
+                    case "xx":
+                        if (icl.getConfirmation("Exclude species and names (ignoring gender) from package '" + line + "'")) {
+                            subtractPackage(coldp, line, ",", false);
+                        } 
+                        break;
+                    case "xt":
+                        if (icl.getConfirmation("Exclude species and names from tab-delimited package '" + line + "'")) {
+                            subtractPackage(coldp, line, "\t", true);
+                        } 
+                        break;
+                    case "xxt":
+                        if (icl.getConfirmation("Exclude species and names (ignoring gender) from tab-delimited package '" + line + "'")) {
+                            subtractPackage(coldp, line, "\t", true);
+                        } 
                         break;
                 }
             }
