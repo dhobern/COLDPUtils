@@ -700,6 +700,14 @@ public class InteractiveCommandLine {
                             icl.addSynonym(coldp, null, null);
                         }
                         break;
+                    case "s-":
+                        if (icl.getSynonym() != null && icl.getConfirmation("Delete synonym " + icl.getSynonym().toString() + "?")) {
+			    COLDPSynonym syn = icl.getSynonym();
+                            icl.setSynonym(null);
+                            coldp.deleteSynonym(syn);
+                        }
+			break;
+
                     case "x":
                         if (icl.getConfirmation("Exclude species and names from package '" + line + "'")) {
                             subtractPackage(coldp, line, ",", false);
@@ -1233,6 +1241,7 @@ public class InteractiveCommandLine {
             editNameReference(nameReference);
             setNameReference(nameReference);
         }
+        setName(name);
         if (taxonAffected && name.getTaxon() != null 
                 && getConfirmation("Make corresponding changes to taxon: " 
                         + name.getTaxon().toString(), false)) {
@@ -1309,7 +1318,7 @@ public class InteractiveCommandLine {
                     accepted = findInstance(acceptedName, coldp.getTaxa(), coldp.getTaxa().values());
                 }
                 if (accepted != null) {
-                    taxon = accepted;
+                    setTaxon(accepted);
                     addSynonym(coldp, null, null);
                 }
             }

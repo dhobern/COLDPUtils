@@ -59,6 +59,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
             }
             taxonID = null;
             this.taxon = taxon;
+            
             if (taxon != null) {
                 taxon.registerSynonym(this);
             }
