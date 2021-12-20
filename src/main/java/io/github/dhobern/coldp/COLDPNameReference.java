@@ -187,8 +187,8 @@ public class COLDPNameReference implements Comparable<COLDPNameReference>, TreeR
         }
 
         formatted += ": " + reference.getAuthor();
-        if (reference.getYear() != null) {
-            formatted += " (" + reference.getYear() + ")";
+        if (reference.getIssued() != null) {
+            formatted += " (" + reference.getIssued() + ")";
         }
 
         if (link != null && link.startsWith("http")) {

@@ -199,7 +199,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     public String getSortString() {
         String s;
         if (reference != null) {
-            s = reference.getYear();
+            s = reference.getIssued();
         } else if (name.getPublishedInYear() != null) {
             s = name.getPublishedInYear();
         } else {

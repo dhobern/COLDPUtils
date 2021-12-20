@@ -415,28 +415,36 @@ public class InteractiveCommandLine {
                         String author = icl.readLine("Author", "", false);
                         String year = icl.readLine("Year", "", "^([0-9]{4})?$", false);
                         String title = icl.readLine("Title", "", false);
-                        String source = icl.readLine("Source", "", false);
-                        String details = icl.readLine("Details", "", false);
+                        String containerTitle = icl.readLine("Journal/Series", "", false);
+                        String volume = icl.readLine("Volume", "", false);
+                        String issue = icl.readLine("Issue", "", false);
+                        String page = icl.readLine("Page", "", false);
                         String link = icl.readLine("Link", "", false);
                         if (author != null && year != null && title != null) {
                             COLDPReference reference = coldp.newReference();
                             reference.setAuthor(author);
-                            reference.setYear(year);
+                            reference.setIssued(year);
                             reference.setTitle(title);
-                            reference.setSource(source);
-                            reference.setDetails(details);
+                            reference.setContainerTitle(containerTitle);
+                            reference.setVolume(volume);
+                            reference.setIssue(issue);
+                            reference.setPage(page);
                             reference.setLink(link);
                             icl.setReference(reference);
                         }
                         break;
+
+
                     case "r/":
                         COLDPReference reference = icl.getReference();
                         if (reference != null) {
                             reference.setAuthor(icl.readLine("Author", reference.getAuthor(), false));
-                            reference.setYear(icl.readLine("Year", reference.getYear(), "^([0-9]{4})?$", false));
+                            reference.setIssued(icl.readLine("Year", reference.getIssued(), "^([0-9]{4})?$", false));
                             reference.setTitle(icl.readLine("Title", reference.getTitle(), false));
-                            reference.setSource(icl.readLine("Source", reference.getSource(), false));
-                            reference.setDetails(icl.readLine("Details", reference.getDetails(), false));
+                            reference.setContainerTitle(icl.readLine("Journal/Series", reference.getContainerTitle(), false));
+                            reference.setVolume(icl.readLine("Volume", reference.getVolume(), false));
+                            reference.setIssue(icl.readLine("Issue", reference.getIssue(), false));
+                            reference.setPage(icl.readLine("Page", reference.getPage(), false));
                             reference.setLink(icl.readLine("Link", reference.getLink(), false));
                         }
                         break;
@@ -1082,11 +1090,11 @@ public class InteractiveCommandLine {
             taxon.setParent(parent);
         }
         taxon.fixHierarchy(false, false, false);
-        taxon.setLifezone(readEnum(EnvironmentEnum.class, "Lifezone", taxon.getLifezone(), false).toString());
-        taxon.setTemporalRangeEnd(readEnum(GeoTimeEnum.class, "Temporal range end", taxon.getTemporalRangeEnd(), false).toString());
+        taxon.setLifezone(readEnum(EnvironmentEnum.class, "Lifezone", (taxon.getLifezone() == null ? "terrestrial" : taxon.getLifezone()), false).toString());
+        taxon.setTemporalRangeEnd(readEnum(GeoTimeEnum.class, "Temporal range end", (taxon.getTemporalRangeEnd() == null ? "Holocene" : taxon.getTemporalRangeEnd()), false).toString());
         taxon.setExtinct(readLine("Extinct (Y/N)", taxon.isExtinct() ? "Y" : "N", "^[NY]$", false).equals("Y"));
         taxon.setRemarks(readLine("Remarks", taxon.getRemarks(), false));
-        taxon.setScrutinizer(readLine("Scrutinizer", taxon.getScrutinizer(), false));
+        taxon.setScrutinizer(readLine("Scrutinizer", (taxon.getScrutinizer() == null ? "D. Hobern" : taxon.getScrutinizer()), false));
         if (getConfirmation("Set scrutinizer date to today")) {
             taxon.setScrutinizerDate(DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()));
         } else {
@@ -1225,8 +1233,8 @@ public class InteractiveCommandLine {
             year = name.getAuthorship().replaceAll("^(.*)([0-2][0-9]{3}?)(.*)", "$2");
         }
         name.setPublishedInYear(readLine("Published in year", year, "^([1-2][0-9]{3})?$", false));
-        name.setCode(readEnum(CodeEnum.class, "Code", name.getCode(), false).toString());
-        name.setStatus(readEnum(NameStatusEnum.class, "Status", name.getStatus(), false).getStatus());
+        name.setCode(readEnum(CodeEnum.class, "Code", (name.getCode() == null ? "ICZN" : name.getCode()), false).toString());
+        name.setStatus(readEnum(NameStatusEnum.class, "Status", (name.getStatus() == null ? "established" : name.getStatus()), false).getStatus());
         name.setRemarks(readLine("Remarks", name.getRemarks(), false));
         name.setLink(readLine("Link", name.getLink(), false));
         if(nameReference != null && getConfirmation("Edit existing associated name reference: " + nameReference.toString())) {

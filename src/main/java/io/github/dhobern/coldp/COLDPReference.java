@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +28,11 @@ public class COLDPReference implements TreeRenderable {
     private String ID;
     private String author;
     private String title;
-    private String year;
-    private String source;
-    private String details;
+    private String issued;
+    private String containerTitle;
+    private String volume;
+    private String issue;
+    private String page;
     private String link;
     
     private Set<COLDPName> names;
@@ -69,28 +70,44 @@ public class COLDPReference implements TreeRenderable {
         this.title = title;
     }
 
-    public String getYear() {
-        return year;
+    public String getIssued() {
+        return issued;
     }
 
-    public void setYear(String year) {
-        this.year = year;
+    public void setIssued(String issued) {
+        this.issued = issued;
     }
 
-    public String getSource() {
-        return source;
+    public String getContainerTitle() {
+        return containerTitle;
     }
 
-    public void setSource(String source) {
-        this.source = source;
+    public void setContainerTitle(String containerTitle) {
+        this.containerTitle = containerTitle;
     }
 
-    public String getDetails() {
-        return details;
+    public String getVolume() {
+        return volume;
     }
 
-    public void setDetails(String details) {
-        this.details = details;
+    public void setVolume(String volume) {
+        this.volume = volume;
+    }
+
+    public String getIssue() {
+        return issue;
+    }
+
+    public void setIssue(String issue) {
+        this.issue = issue;
+    }
+
+    public String getPage() {
+        return page;
+    }
+
+    public void setPage(String page) {
+        this.page = page;
     }
 
     public String getLink() {
@@ -261,7 +278,7 @@ public class COLDPReference implements TreeRenderable {
         { 
             int comparison = a.getAuthor().toLowerCase().compareTo(b.getAuthor().toLowerCase());
             if (comparison == 0) {
-                comparison = a.getYear().compareTo(b.getYear());
+                comparison = a.getIssued().compareTo(b.getIssued());
             } 
             if (comparison == 0) {
                 comparison = a.getTitle().compareTo(b.getTitle());
@@ -272,38 +289,62 @@ public class COLDPReference implements TreeRenderable {
     }     
 
     public static String getCsvHeader() {
-        return "ID,author,title,year,source,details,link"; 
+        return "ID,author,title,year,containerTitle,volume,link"; 
     }
     
     public String toCsv() {
-        return buildCSV(ID, author, title, year, source, details, link);
+        return buildCSV(ID, author, title, issued, containerTitle, volume, issue, page, link);
     }
     
     public String toString() {
-        return ID + " " + author + ", " + year + ", " + title;
+        return ID + " " + author + ", " + issued + ", " + title;
     }
 
     public String toString(int authorLength, int titleLength) {
-        return ID + " " + abbreviate(author, authorLength) + ", " + year + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
+        return ID + " " + abbreviate(author, authorLength) + ", " + issued + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
     }
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
         TreeRenderType renderType = context.getTreeRenderType();
         String formatted = getAuthor();
-        if (getYear() != null) {
-            formatted += " (" + getYear() + ")";
+        if (getIssued() != null) {
+            formatted += " (" + getIssued() + ")";
         }
         formatted = renderType.wrapStrong(formatted) + " ";
         formatted += getTitle();
         if (!formatted.endsWith(".")) {
             formatted += ".";
         }   
-        if (getSource() != null && getSource().length() > 0) {
-            formatted += " " + renderType.wrapEmphasis(getSource());
+        if (getContainerTitle() != null && getContainerTitle().length() > 0) {
+            formatted += " " + renderType.wrapEmphasis(getContainerTitle());
         }
-        if (getDetails() != null && getDetails().length() > 0) {
-            formatted += " " + getDetails();
+        if (getVolume() != null && getVolume().length() > 0) {
+            if (getIssue() != null && getIssue().length() > 0) {
+                if (getPage() != null && getPage().length() > 0){
+                    formatted += " " + getVolume() + " (" + getIssue() + "): " + getPage();
+                } else {
+                    formatted += " " + getVolume() + " (" + getIssue() + ")";
+                }
+            } else {
+                if (getPage() != null && getPage().length() > 0) {
+                    formatted += " " + getVolume() + ": " + getPage();
+                } else {
+                    formatted += " " + getVolume();
+                }
+            }
+        } else {
+            if (getIssue() != null && getIssue().length() > 0) {
+                if (getPage() != null && getPage().length() > 0) {
+                    formatted += " (" + getIssue() + "): " + getPage();
+                } else {
+                    formatted += " (" + getIssue() + ")";
+                }
+            } else {
+                if (getPage() != null && getPage().length() > 0) {
+                    formatted += " " + getPage();
+                }
+            }
         }
         if (!formatted.endsWith(".")) {
             formatted += ".";

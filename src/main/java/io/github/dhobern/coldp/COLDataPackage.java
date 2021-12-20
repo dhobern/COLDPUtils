@@ -135,7 +135,7 @@ public class COLDataPackage {
             name.setReference(reference);
             name.setPublishedInPage(page);
             name.setPublishedInYear(reference != null 
-                            ? reference.getYear()
+                            ? reference.getIssued()
                             : (authorship != null ? getYearFromAuthorship(authorship) : null));
             if (taxon != null) {
                 COLDPSynonym synonym = newSynonym();

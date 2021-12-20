@@ -224,8 +224,8 @@ public class COLDPDistribution implements Comparable<COLDPDistribution>, TreeRen
         if (reference != null) {
             context.addReference(reference);
             note =  reference.getAuthor();
-            if (reference.getYear() != null) {
-                note += " " + reference.getYear();
+            if (reference.getIssued() != null) {
+                note += " " + reference.getIssued();
             }
         }
 

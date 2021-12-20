@@ -267,8 +267,8 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
         if (reference != null) {
             context.addReference(reference);
             note =  reference.getAuthor();
-            if (reference.getYear() != null) {
-                note += " " + reference.getYear();
+            if (reference.getIssued() != null) {
+                note += " " + reference.getIssued();
             }
         }
 

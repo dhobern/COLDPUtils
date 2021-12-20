@@ -381,19 +381,19 @@ public class COLDPFormatterCSS {
 
     private static void writeReference(PrintWriter writer, COLDPReference reference, String prefix) {
         String formatted = reference.getAuthor();
-        if (reference.getYear() != null) {
-            formatted += " (" + reference.getYear() + ") ";
+        if (reference.getIssued() != null) {
+            formatted += " (" + reference.getIssued() + ") ";
         }
         formatted = wrapStrong(formatted);
         formatted += reference.getTitle();
         if (!formatted.endsWith(".")) {
             formatted += ".";
         }   
-        if (reference.getSource() != null && reference.getSource().length() > 0) {
-            formatted += " <em>" + reference.getSource() + "</em>";
+        if (reference.getContainerTitle() != null && reference.getContainerTitle().length() > 0) {
+            formatted += " <em>" + reference.getContainerTitle() + "</em>";
         }
-        if (reference.getDetails() != null && reference.getDetails().length() > 0) {
-            formatted += " " + reference.getDetails();
+        if (reference.getVolume() != null && reference.getVolume().length() > 0) {
+            formatted += " " + reference.getVolume();
         }
         if (!formatted.endsWith(".")) {
             formatted += ".";
@@ -412,8 +412,8 @@ public class COLDPFormatterCSS {
         }
         
         formatted += ": " + reference.getAuthor() + " ";
-        if (reference.getYear() != null) {
-            formatted += "(" + reference.getYear() + ") ";
+        if (reference.getIssued() != null) {
+            formatted += "(" + reference.getIssued() + ") ";
         }
 
         if (nameReference.getLink() != null && nameReference.getLink().startsWith("http")) {

@@ -187,7 +187,7 @@ public class COLDPNameRelation implements Comparable<COLDPNameRelation>, TreeRen
     public String getSortString() {
         String s;
         if (reference != null) {
-            s = reference.getYear();
+            s = reference.getIssued();
         } else if (name.getPublishedInYear() != null) {
             s = name.getPublishedInYear();
         } else {
