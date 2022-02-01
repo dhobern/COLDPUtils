@@ -291,7 +291,7 @@ public class COLDPReference implements TreeRenderable {
     }     
 
     public static String getCsvHeader() {
-        return "ID,author,title,year,containerTitle,volume,link"; 
+        return "ID,author,title,issued,containerTitle,volume,issue,page,link"; 
     }
     
     public String toCsv() {
