@@ -339,6 +339,11 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
             COLClient client = new COLClient();
             NameUsageSearchResponse response = client.searchForNameUsage(relatedTaxonScientificName);
             if (response != null && response.getResult() != null) {
+                relatedTaxonFullName = null;
+                relatedTaxonHTMLName = null;
+                relatedTaxonLink = null;
+                relatedTaxonOrder = null;
+                relatedTaxonFamily = null;
                 List<NameUsageSearchResult> usages 
                         = response.getResult().stream().filter(u 
                                 -> u.getUsage().getName().getScientificName()
@@ -370,8 +375,6 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
                     LOG.error("COL search for " + relatedTaxonScientificName + " returned " + response.getResult().size() + " matches");
                     if (usages.size() > 0) {
                         relatedTaxonLink = "https://www.catalogueoflife.org/data/search?q=" + relatedTaxonScientificName;
-                        relatedTaxonFullName = relatedTaxonScientificName + " (Multiple matches in COL)";
-                        relatedTaxonHTMLName = relatedTaxonFullName;
                     }
                 }
             } else {
