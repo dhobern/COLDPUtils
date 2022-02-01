@@ -368,6 +368,11 @@ public class COLDPSpeciesInteraction implements Comparable<COLDPSpeciesInteracti
                     }
                 } else {
                     LOG.error("COL search for " + relatedTaxonScientificName + " returned " + response.getResult().size() + " matches");
+                    if (usages.size() > 0) {
+                        relatedTaxonLink = "https://www.catalogueoflife.org/data/search?q=" + relatedTaxonScientificName;
+                        relatedTaxonFullName = relatedTaxonScientificName + " (Multiple matches in COL)";
+                        relatedTaxonHTMLName = relatedTaxonFullName;
+                    }
                 }
             } else {
                 LOG.error("COL search for " + relatedTaxonScientificName + " failed");

@@ -35,8 +35,8 @@ public class COLClient {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(COLClient.class);
     
-    private static final String COL_API = "https://api.catalogue.life/";
-    private static final String COL_WWW = "https://www.catalogue.life/";
+    private static final String COL_API = "https://api.catalogueoflife.org/";
+    private static final String COL_WWW = "https://www.catalogueoflife.org/";
     private static final String DEFAULT_DATASETKEY = "3LR";
     
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -80,6 +80,7 @@ public class COLClient {
                         .setHeader("User-Agent", this.getClass().getName())
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .build();
+                System.err.println(request.toString() + "\n");
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() >= 400) {
                     LOG.error("Response: " + response.body());

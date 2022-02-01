@@ -351,6 +351,15 @@ public class InteractiveCommandLine {
                             icl.setSpeciesInteraction(speciesInteraction);
                         }
                         break;
+                    case "i<<": // Force update of all links
+                        if (coldp.getSpeciesInteractions() != null) {
+                            for (COLDPSpeciesInteraction speciesInteraction : coldp.getSpeciesInteractions()) {
+                                if (speciesInteraction.getRelatedTaxonScientificName() != null) {
+                                    speciesInteraction.linkToCOL();
+                                }
+                            }
+                        }
+                        break;
                     case "i<":
                         if (coldp.getSpeciesInteractions() != null) {
                             for (COLDPSpeciesInteraction speciesInteraction : coldp.getSpeciesInteractions()) {
