@@ -581,7 +581,7 @@ public class COLDataPackage {
                 if (synonym.getTaxonID() != null) {
                      COLDPTaxon taxon = taxa.get(synonym.getTaxonID());
                     if (taxon == null) {
-                        LOG.error("Taxon " + synonym.getTaxonID() + " not found for synonym " + synonym.toString());
+                        LOG.error("Taxon " + synonym.getTaxonID() + " not found for synonym");
                     } else {
                         synonym.setTaxon(taxon);
                     }
