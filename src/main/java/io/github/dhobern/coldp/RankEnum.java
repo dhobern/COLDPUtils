@@ -39,7 +39,8 @@ public enum RankEnum {
     subspecies(false, true, null),
     variety(false, true, "var."),
     form(false, true, "f."),
-    aberration(false, true, "ab.");
+    aberration(false, true, "ab."),
+    race(false, true, "race");
     
     private RankEnum() {
     }

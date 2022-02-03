@@ -1089,7 +1089,10 @@ public class InteractiveCommandLine {
             taxon.setReference(reference);
         }
         if (parent == null) {
-            String currentParentName = taxon.getParent().getName().getScientificName();
+            String currentParentName = "";
+            if (taxon.getParent() != null) {
+                currentParentName = taxon.getParent().getName().getScientificName();
+            }
             String parentName = readLine("Parent", (taxon.getParentID() == null) ? "" : currentParentName, false);
             if (!Objects.equals(parentName, currentParentName)) {
                 parent = findInstance(parentName, coldp.getTaxa(), coldp.getTaxa().values());
