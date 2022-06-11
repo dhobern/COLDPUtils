@@ -172,10 +172,10 @@ public class COLDataPackageTest {
         COLDPTaxon Ochyrotica = coldp.getTaxa().get("268");
         int childCount = Ochyrotica.getChildren().size();
         
-        COLDPName nova = coldp.addName(RankEnum.species, "Ochyrotica", "nova", null, "Dylan, 1963", null, null, Ochyrotica,
+        COLDPName nova = coldp.addName(RankEnum.species, "Ochyrotica", null, "nova", null, "Dylan, 1963", null, null, Ochyrotica,
                       coldp.getReferences().get("813"), "12", "https://hobern.net/", "Not a real species", "established", 
                       "accepted", "Still not a good species", "Donald Hobern");
-        coldp.addName(RankEnum.species, "Ochyrotica", "malissima", null, "Tengo, 2000", null, nova.getTaxon(), null,
+        coldp.addName(RankEnum.species, "Ochyrotica", null, "malissima", null, "Tengo, 2000", null, nova.getTaxon(), null,
                       coldp.getReferences().get("1905"), "122", "https://hobern.net/", "Very much not a real species", "established", 
                       "synonym", "Not in any way a good species", "Donald Hobern");
         

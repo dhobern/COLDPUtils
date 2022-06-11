@@ -33,6 +33,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     private String rank;
     private String uninomial;
     private String genus;
+    private String infragenericEpithet;
     private String specificEpithet;
     private String infraspecificEpithet;
     private String referenceID;
@@ -176,11 +177,21 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         RankEnum currentRank = getRankEnum();
         if (currentRank.inSpeciesGroup() && !Objects.equals(genus, newGenus)) {
             genus = newGenus;
-            scientificName = genus + " " + specificEpithet
+            scientificName = genus + " " 
+                    + (infragenericEpithet != null && infragenericEpithet.length() > 0 ? "(" + infragenericEpithet + ") " : "")
+                    + specificEpithet
                     + (currentRank.infraspecific()
                         ? " " + currentRank.getInfraspecificMarker() + " " + infraspecificEpithet
                     : "");
         }
+    }
+
+    public String getInfragenericEpithet() {
+        return infragenericEpithet;
+    }
+
+    public void setInfragenericEpithet(String infragenericEpithet) {
+        this.infragenericEpithet = infragenericEpithet;
     }
     
     public String getSpecificEpithet() {
@@ -416,9 +427,12 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         return scientificName;
     }
     
-    public static String getScientificNameFromParts(RankEnum r, String uOrG, String s, String i) {
+    public static String getScientificNameFromParts(RankEnum r, String uOrG, String sg, String s, String i) {
         String sn = uOrG;
         if (r.inSpeciesGroup()) {
+            if (sg != null && sg.length() > 0) {
+                sn += " (" + sg + ")";
+            }
             sn += " " + s;
             if (r.infraspecific()) {
                 String marker = r.getInfraspecificMarker();
@@ -427,6 +441,8 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
                 }
                 sn += " " + i;
             }
+        } else if (r == RankEnum.subgenus) {
+            sn = uOrG + " (" + sg + ")";
         }
         return sn;
     }
@@ -474,14 +490,14 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     
     public static String getCsvHeader() {
         return "ID,basionymID,scientificName,authorship,rank,uninomial,genus,"
-                + "specificEpithet,infraspecificEpithet,referenceID,"
+                + "infragenericEpithet,specificEpithet,infraspecificEpithet,referenceID,"
                 + "publishedInPage,publishedInYear,code,status,remarks,link"; 
     }
     
     public String toCSV() {
         return buildCSV(ID, getBasionymID(),
                         scientificName, authorship, rank, uninomial, genus,
-                        specificEpithet, infraspecificEpithet,
+                        infragenericEpithet, specificEpithet, infraspecificEpithet,
                         getReferenceID(), publishedInPage,
                         publishedInYear, code, status, remarks, link);
     }
@@ -516,6 +532,11 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         }
 
         String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + renderType.wrapStrong(formatName(this, renderType));
+        if(context.getContextType() == ContextType.Synonym 
+                && context.getCurrentSynonym() != null 
+                && context.getCurrentSynonym().getAccordingToID() != null) {
+            formatted += " auct.";            
+        }
 
         String indent = context.getIndent();
         writer.println(indent + renderType.openNode("Name") + formatted);
@@ -569,6 +590,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         if (name.getRank() != null) {
             switch (name.getRank()) {
                 case "genus":
+                case "infragenericEpithet":
                 case "species":
                 case "subspecies":
                     scientificName = renderType.wrapEmphasis(scientificName);

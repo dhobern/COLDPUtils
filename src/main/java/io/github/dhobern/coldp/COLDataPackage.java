@@ -110,13 +110,13 @@ public class COLDataPackage {
         return region;
     }
     
-    public COLDPName addName(RankEnum rankEnum, String uninomialOrGenus, 
+    public COLDPName addName(RankEnum rankEnum, String uninomialOrGenus, String subgenus,
                              String specificEpithet, String infraspecificEpithet, 
                              String authorship, COLDPName basionym, COLDPTaxon taxon, COLDPTaxon parent,
                              COLDPReference reference, String page, String url, 
                              String nameRemarks, String nameStatus, String taxonStatus,
                              String taxonRemarks, String scrutinizer) {
-        String scientificName = COLDPName.getScientificNameFromParts(rankEnum, uninomialOrGenus, specificEpithet, infraspecificEpithet);
+        String scientificName = COLDPName.getScientificNameFromParts(rankEnum, uninomialOrGenus, subgenus, specificEpithet, infraspecificEpithet);
         COLDPName name = getNameByScientificName(scientificName);
         if (name != null) {
             LOG.error("Name " + scientificName + " already exists [" + name.getID() + "]");

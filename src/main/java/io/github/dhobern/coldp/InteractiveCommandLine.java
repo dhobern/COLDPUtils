@@ -429,6 +429,10 @@ public class InteractiveCommandLine {
                         String issue = icl.readLine("Issue", "", false);
                         String page = icl.readLine("Page", "", false);
                         String link = icl.readLine("Link", "", false);
+                        String citation = null;
+                        if (author == null || year == null || title == null) {
+                            citation = icl.readLine("Citation", "", false);
+                        }
                         if (author != null && year != null && title != null) {
                             COLDPReference reference = coldp.newReference();
                             reference.setAuthor(author);
@@ -439,6 +443,7 @@ public class InteractiveCommandLine {
                             reference.setIssue(issue);
                             reference.setPage(page);
                             reference.setLink(link);
+                            reference.setCitation(citation);
                             icl.setReference(reference);
                         }
                         break;
@@ -447,6 +452,10 @@ public class InteractiveCommandLine {
                     case "r/":
                         COLDPReference reference = icl.getReference();
                         if (reference != null) {
+                            ReferenceFormatEnum originalFormat = reference.getReferenceFormat();
+                            if (originalFormat == ReferenceFormatEnum.CITATION) {
+                                reference.setCitation(icl.readLine("Citation", reference.getCitation(), false));
+                            }
                             reference.setAuthor(icl.readLine("Author", reference.getAuthor(), false));
                             reference.setIssued(icl.readLine("Year", reference.getIssued(), "^([0-9]{4})?$", false));
                             reference.setTitle(icl.readLine("Title", reference.getTitle(), false));
@@ -455,6 +464,10 @@ public class InteractiveCommandLine {
                             reference.setIssue(icl.readLine("Issue", reference.getIssue(), false));
                             reference.setPage(icl.readLine("Page", reference.getPage(), false));
                             reference.setLink(icl.readLine("Link", reference.getLink(), false));
+                            ReferenceFormatEnum newFormat = reference.getReferenceFormat();
+                            if (newFormat == ReferenceFormatEnum.NONE || newFormat == ReferenceFormatEnum.BOTH) {
+                                reference.setCitation(icl.readLine("Citation", reference.getCitation(), false));
+                            }
                         }
                         break;
                     case "r-":
@@ -1107,11 +1120,13 @@ public class InteractiveCommandLine {
         taxon.setExtinct(readLine("Extinct (Y/N)", taxon.isExtinct() ? "Y" : "N", "^[NY]$", false).equals("Y"));
         taxon.setRemarks(readLine("Remarks", taxon.getRemarks(), false));
         taxon.setScrutinizer(readLine("Scrutinizer", (taxon.getScrutinizer() == null ? "D. Hobern" : taxon.getScrutinizer()), false));
-        if (getConfirmation("Set scrutinizer date to today")) {
+        if (taxon.getScrutinizerDate() == null || taxon.getScrutinizerDate().length() < 10
+                || getConfirmation("Set scrutinizer date to today")) {
             taxon.setScrutinizerDate(DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()));
         } else {
             taxon.setScrutinizerDate(readLine("Scrutinizer date", taxon.getScrutinizerDate(), "^[12][0-9]{3}-[01][0-9]-[0-3][0-9]$", false));
         }
+        taxon.setProvisional(readLine("Provisional (Y/N)", taxon.isProvisional() ? "Y" : "N", "^[NY]$", false).equals("Y"));
     }
     
     private COLDPNameRelation addNameRelation(COLDataPackage coldp, COLDPName relatedName, String type, String remarks) {
@@ -1219,6 +1234,7 @@ public class InteractiveCommandLine {
             name.setInfraspecificEpithet(null);
         } else {
             String genus = readLine("Genus", name.getGenus(), false);
+            String subgenus = readLine("Subgenus", name.getInfragenericEpithet(), false);
             String specificEpithet = readLine("Specific epithet", name.getSpecificEpithet(), false);
             String infraspecificEpithet = null;
             if (rank.isInfraspecific()) {
@@ -1235,7 +1251,7 @@ public class InteractiveCommandLine {
             name.setGenus(genus);
             name.setSpecificEpithet(specificEpithet);
             name.setInfraspecificEpithet(infraspecificEpithet);
-            name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, specificEpithet, infraspecificEpithet));
+            name.setScientificName(COLDPName.getScientificNameFromParts(rank, genus, subgenus, specificEpithet, infraspecificEpithet));
         }
         if (name.getReference() != null) {
             name.setPublishedInPage(readLine("Published in page", name.getPublishedInPage(), false));
@@ -1249,9 +1265,11 @@ public class InteractiveCommandLine {
         name.setStatus(readEnum(NameStatusEnum.class, "Status", (name.getStatus() == null ? "established" : name.getStatus()), false).getStatus());
         name.setRemarks(readLine("Remarks", name.getRemarks(), false));
         name.setLink(readLine("Link", name.getLink(), false));
-        if(nameReference != null && getConfirmation("Edit existing associated name reference: " + nameReference.toString())) {
-            editNameReference(nameReference);
-        } else if (name.getReference() != null && name.getPublishedInPage() != null && getConfirmation("Create associated name reference", false)) {
+        if(nameReference != null) {
+            if (getConfirmation("Edit existing associated name reference: " + nameReference.toString())) {
+                editNameReference(nameReference);
+            }
+        } else if (name.getPublishedInPage() != null && getConfirmation("Create associated name reference", false)) {
             nameReference = coldp.newNameReference();
             nameReference.setName(name);
             nameReference.setReference(name.getReference());

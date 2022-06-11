@@ -26,6 +26,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     private String status;
     private String referenceID; 
     private String remarks;
+    private String accordingToID;
     
     private COLDPTaxon taxon;
     private COLDPName name;
@@ -128,6 +129,14 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
         }
     }
 
+    public String getAccordingToID() {
+        return accordingToID;
+    }
+
+    public void setAccordingToID(String accordingToID) {
+        this.accordingToID = accordingToID;
+    }
+
     public COLDPReference getReference() {
         return reference;
     }
@@ -161,6 +170,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
         hash = 59 * hash + Objects.hashCode(this.status);
         hash = 59 * hash + Objects.hashCode(this.getReferenceID());
         hash = 59 * hash + Objects.hashCode(this.remarks);
+        hash = 59 * hash + Objects.hashCode(this.getAccordingToID());
         return hash;
     }
 
@@ -214,11 +224,11 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     }
 
     public static String getCsvHeader() {
-        return "taxonID,nameID,status,referenceID,remarks"; 
+        return "taxonID,nameID,accordingToID,status,referenceID,remarks"; 
     }
     
     public String toCsv() {
-        return buildCSV(getTaxonID(), getNameID(), status,
+        return buildCSV(getTaxonID(), getNameID(), getAccordingToID(), status,
                         getReferenceID(), remarks);
     }
 

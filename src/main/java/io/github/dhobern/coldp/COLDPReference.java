@@ -34,6 +34,7 @@ public class COLDPReference implements TreeRenderable {
     private String issue;
     private String page;
     private String link;
+    private String citation;
     
     private Set<COLDPName> names;
     private List<COLDPNameReference> nameReferences;
@@ -116,6 +117,14 @@ public class COLDPReference implements TreeRenderable {
 
     public void setLink(String link) {
         this.link = link;
+    }
+
+    public String getCitation() {
+        return citation;
+    }
+
+    public void setCitation(String citation) {
+        this.citation = citation;
     }
 
     public Set<COLDPName> getNames() {
@@ -246,6 +255,31 @@ public class COLDPReference implements TreeRenderable {
             speciesInteractions.remove(si);
         }
     }
+    
+    ReferenceFormatEnum getReferenceFormat() {
+        if (contentPresent(author) || contentPresent(title) 
+                || contentPresent(issued) || contentPresent(containerTitle) 
+                || contentPresent(volume) || contentPresent(issue) 
+                || contentPresent(page) || contentPresent(link)) {
+            if (contentPresent(citation)) { 
+                return ReferenceFormatEnum.BOTH;
+            } else {
+                return ReferenceFormatEnum.PARSED;
+            }
+        } else if (contentPresent(citation)) { 
+            return ReferenceFormatEnum.CITATION;
+        }
+        
+        return ReferenceFormatEnum.NONE;
+    }
+    
+    private boolean contentPresent(String s) {
+        return s != null && s.length() > 0;
+    }
+
+    public List<COLDPSpeciesInteraction> getSpeciesInteractions() {
+        return speciesInteractions;
+    }
 
     @Override
     public int hashCode() {
@@ -291,73 +325,85 @@ public class COLDPReference implements TreeRenderable {
     }     
 
     public static String getCsvHeader() {
-        return "ID,author,title,issued,containerTitle,volume,issue,page,link"; 
+        return "ID,author,title,issued,containerTitle,volume,issue,page,link,citation"; 
     }
     
     public String toCsv() {
-        return buildCSV(ID, author, title, issued, containerTitle, volume, issue, page, link);
+        return buildCSV(ID, author, title, issued, containerTitle, volume, issue, page, link, citation);
     }
     
     public String toString() {
-        return ID + " " + author + ", " + issued + ", " + title;
+        if (contentPresent(author) || contentPresent(issued) || contentPresent(title)) {
+            return ID + " " + author + ", " + issued + ", " + title;
+        } else {
+            return ID + " " + citation;
+        }
     }
 
     public String toString(int authorLength, int titleLength) {
-        return ID + " " + abbreviate(author, authorLength) + ", " + issued + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
+        if (contentPresent(author) || contentPresent(issued) || contentPresent(title)) {
+            return ID + " " + abbreviate(author, authorLength) + ", " + issued + (titleLength == 0 ? "" : ", ") + abbreviate(title, titleLength);
+        } else {
+            return ID + " " + abbreviate(citation, titleLength + authorLength);
+        }
     }
 
     @Override
     public void render(PrintWriter writer, TreeRenderProperties context) {
         TreeRenderType renderType = context.getTreeRenderType();
-        String formatted = getAuthor();
-        if (getIssued() != null) {
-            formatted += " (" + getIssued() + ")";
-        }
-        formatted = renderType.wrapStrong(formatted) + " ";
-        formatted += getTitle();
-        if (!formatted.endsWith(".")) {
-            formatted += ".";
-        }   
-        if (getContainerTitle() != null && getContainerTitle().length() > 0) {
-            formatted += " " + renderType.wrapEmphasis(getContainerTitle());
-        }
-        if (getVolume() != null && getVolume().length() > 0) {
-            if (getIssue() != null && getIssue().length() > 0) {
-                if (getPage() != null && getPage().length() > 0){
-                    formatted += " " + getVolume() + " (" + getIssue() + "): " + getPage();
-                } else {
-                    formatted += " " + getVolume() + " (" + getIssue() + ")";
-                }
-            } else {
-                if (getPage() != null && getPage().length() > 0) {
-                    formatted += " " + getVolume() + ": " + getPage();
-                } else {
-                    formatted += " " + getVolume();
-                }
-            }
+        if (getReferenceFormat() == ReferenceFormatEnum.CITATION) {
+            writer.println(context.getIndent() + renderType.openNode("Reference") + citation + renderType.closeNode());
         } else {
-            if (getIssue() != null && getIssue().length() > 0) {
-                if (getPage() != null && getPage().length() > 0) {
-                    formatted += " (" + getIssue() + "): " + getPage();
+            String formatted = getAuthor();
+            if (getIssued() != null) {
+                formatted += " (" + getIssued() + ")";
+            }
+            formatted = renderType.wrapStrong(formatted) + " ";
+            formatted += getTitle();
+            if (!formatted.endsWith(".")) {
+                formatted += ".";
+            }   
+            if (getContainerTitle() != null && getContainerTitle().length() > 0) {
+                formatted += " " + renderType.wrapEmphasis(getContainerTitle());
+            }
+            if (getVolume() != null && getVolume().length() > 0) {
+                if (getIssue() != null && getIssue().length() > 0) {
+                    if (getPage() != null && getPage().length() > 0){
+                        formatted += " " + getVolume() + " (" + getIssue() + "): " + getPage();
+                    } else {
+                        formatted += " " + getVolume() + " (" + getIssue() + ")";
+                    }
                 } else {
-                    formatted += " (" + getIssue() + ")";
+                    if (getPage() != null && getPage().length() > 0) {
+                        formatted += " " + getVolume() + ": " + getPage();
+                    } else {
+                        formatted += " " + getVolume();
+                    }
                 }
             } else {
-                if (getPage() != null && getPage().length() > 0) {
-                    formatted += " " + getPage();
+                if (getIssue() != null && getIssue().length() > 0) {
+                    if (getPage() != null && getPage().length() > 0) {
+                        formatted += " (" + getIssue() + "): " + getPage();
+                    } else {
+                        formatted += " (" + getIssue() + ")";
+                    }
+                } else {
+                    if (getPage() != null && getPage().length() > 0) {
+                        formatted += " " + getPage();
+                    }
                 }
             }
-        }
-        if (!formatted.endsWith(".")) {
-            formatted += ".";
-        }
-        if (getLink() != null && getLink().length() > 0) {
-            if (renderType.equals(TreeRenderType.HTML)) {
-                formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
-            } else {
-                formatted += " " + getLink();
+            if (!formatted.endsWith(".")) {
+                formatted += ".";
             }
+            if (getLink() != null && getLink().length() > 0) {
+                if (renderType.equals(TreeRenderType.HTML)) {
+                    formatted += " <a href=\"" + getLink() + "\" target=\"_blank\"><i class=\"fas fa-external-link-alt fa-sm\"></i></a>";
+                } else {
+                    formatted += " " + getLink();
+                }
+            }
+            writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
         }
-        writer.println(context.getIndent() + renderType.openNode("Reference") + formatted + renderType.closeNode());
     }
 }

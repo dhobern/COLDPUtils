@@ -46,8 +46,10 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     private String subfamily;
     private String tribe;
     private String genus;
+    private String uninomial;
     private String species;
     private String remarks;
+    private boolean provisional;
     
     private Set<COLDPTaxon> children;
     private COLDPTaxon parent;
@@ -156,7 +158,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                 }
                 if (!rank.isHigherThan(RankEnum.genus)) {
                     setGenus(rank.isLowerThan(RankEnum.genus)
-                                    ? parent.getGenus() : name.getScientificName());
+                                    ? parent.getGenus() : name.getUninomial());
                     if (genus == null || genus.length() == 0) {
                         LOG.error("Parent of species-rank genus set to suprageneric " + parent.toString());
                         setGenus("<Unknown genus>");
@@ -173,6 +175,8 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                         LOG.error("Parent of infraspecific taxon set to supraspecific " + parent.toString());
                         setSpecies("<Unknown species>");
                     }
+                } else {
+                    setUninomial(name.getUninomial());
                 }
             }
             
@@ -289,6 +293,14 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
     public void setScrutinizerDate(String scrutinizerDate) {
         this.scrutinizerDate = scrutinizerDate;
+    }
+
+    public boolean isProvisional() {
+        return provisional;
+    }
+
+    public void setProvisional(boolean provisional) {
+        this.provisional = provisional;
     }
 
     public String getReferenceID() {
@@ -414,6 +426,14 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
 
     public void setGenus(String genus) {
         this.genus = genus;
+    }
+
+    public String getUninomial() {
+        return uninomial;
+    }
+
+    public void setUninomial(String uninomial) {
+        this.uninomial = uninomial;
     }
 
     public String getSpecies() {
@@ -560,18 +580,18 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
     }
 
     public static String getCsvHeader() {
-        return "ID,parentID,nameID,scrutinizer,scrutinizerDate,referenceID,"
+        return "ID,parentID,nameID,scrutinizer,scrutinizerDate,provisional,referenceID,"
                + "extinct,temporalRangeEnd,lifezone,kingdom,phylum,class,"
-               + "order,superfamily,family,subfamily,tribe,genus,species,"
+               + "order,superfamily,family,subfamily,tribe,genus,uninomial,species,"
                + "remarks"; 
     }
     
     public String toCsv() {
         return buildCSV(ID, getParentID(), getNameID(), scrutinizer, 
-                        scrutinizerDate, getReferenceID(),
+                        scrutinizerDate, provisional ? "true" : "false", getReferenceID(),
                         extinct ? "true" : "false", temporalRangeEnd,
                         lifezone, kingdom, phylum, clazz, order, superfamily,
-                        family, subfamily, tribe, genus, species, remarks);
+                        family, subfamily, tribe, genus, uninomial, species, remarks);
     }
 
     @Override
