@@ -157,10 +157,10 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                                     ? parent.getTribe() : name.getScientificName());
                 }
                 if (!rank.isHigherThan(RankEnum.genus)) {
-                    setGenus(rank.isLowerThan(RankEnum.genus)
-                                    ? parent.getGenus() : name.getUninomial());
+                    setGenus((parent.getGenus() == null || parent.getGenus().length() == 0)
+                                    ? parent.getUninomial() : parent.getGenus());
                     if (genus == null || genus.length() == 0) {
-                        LOG.error("Parent of species-rank genus set to suprageneric " + parent.toString());
+                        LOG.error("Parent of species-rank taxon set to suprageneric " + parent.toString());
                         setGenus("<Unknown genus>");
                     }
 

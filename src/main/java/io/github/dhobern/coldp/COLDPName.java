@@ -54,6 +54,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     private List<COLDPNameRelation> relatedNameRelations;
     private COLDPTaxon taxon;
     private List<COLDPSynonym> synonyms;
+    private COLDPTypeMaterial typeMaterial;
 
     public COLDPName() {
     }
@@ -113,6 +114,14 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         if (combination != null && combinations != null) {
             combinations.remove(combination);
         }
+    }
+    
+    void setTypeMaterial(COLDPTypeMaterial typeMaterial) {
+        this.typeMaterial = typeMaterial;
+    }
+
+    COLDPTypeMaterial getTypeMaterial() {
+        return typeMaterial;
     }
 
     public String getScientificName() {
