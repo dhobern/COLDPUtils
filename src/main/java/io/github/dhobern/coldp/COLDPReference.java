@@ -310,14 +310,21 @@ public class COLDPReference implements TreeRenderable {
     { 
         public int compare(COLDPReference a, COLDPReference b) 
         { 
-            int comparison = a.getAuthor().toLowerCase().compareTo(b.getAuthor().toLowerCase());
+            String authorA = (a.getAuthor() == null) ? "" : a.getAuthor();
+            String authorB = (b.getAuthor() == null) ? "" : b.getAuthor();
+            int comparison = authorA.compareTo(authorB);
+            if (a.getAuthor() != null && b.getAuthor() != null) {
+                comparison = a.getAuthor().toLowerCase().compareTo(b.getAuthor().toLowerCase());
+            }
             if (comparison == 0) {
                 String issuedA = (a.getIssued() == null) ? "" : a.getIssued();
                 String issuedB = (b.getIssued() == null) ? "" : b.getIssued();
                 comparison = issuedA.compareTo(issuedB);
             } 
             if (comparison == 0) {
-                comparison = a.getTitle().compareTo(b.getTitle());
+                String titleA = (a.getTitle() == null) ? "" : a.getTitle();
+                String titleB = (b.getTitle() == null) ? "" : b.getTitle();
+                comparison = titleA.compareTo(titleB);
             }
             
             return comparison; 
