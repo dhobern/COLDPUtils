@@ -144,7 +144,7 @@ public class COLDPSynonym implements Comparable<COLDPSynonym>, TreeRenderable {
     public void setReference(COLDPReference reference) {
         if (!Objects.equals(this.reference, reference)) {
             if (this.reference != null) {
-                reference.deregisterSynonym(this);
+                this.reference.deregisterSynonym(this);
             }
             this.reference = reference;
             referenceID = null;

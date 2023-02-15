@@ -93,7 +93,7 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
                     && parent != null 
                     && parent.getName() != null
                     && !name.getRankEnum().isLowerThan(parent.getName().getRankEnum())) {
-                LOG.error("Can only set higher-ranked taxon as parent");
+                LOG.error("Can only set higher-ranked taxon as parent: " + this.getName().getScientificName() + " -> " + parent.getName().getScientificName());
             }
 
             if (this.parent != null) {

@@ -272,6 +272,44 @@ public class InteractiveCommandLine {
                             }
                         }
                         break;
+                    case "t<n":
+                        {
+                            COLDPName name = icl.getName();
+                            COLDPTaxon taxon = icl.getTaxon();
+                            COLDPSynonym synonym = null;
+                            if (taxon.getSynonyms() != null) {
+                                for (COLDPSynonym syn : coldp.getSynonyms()) {
+                                    if (syn.getName() == name) {
+                                        synonym = syn;
+                                    }
+                                }
+                            }
+                            COLDPTaxon parent = null;
+                            String parentName = icl.readLine("Parent", 
+                                        name.getRankEnum().inSpeciesGroup() ? name.getGenus() : "", false);
+                            if (!Objects.equals(parentName, taxon.getParent().getName())) {
+                                parent = icl.findInstance(parentName, coldp.getTaxa(), coldp.getTaxa().values());
+                            }
+                            if (name != null && taxon != null && name != taxon.getName() && synonym != null && parent != null) {
+                                COLDPReference reference = icl.getReference();
+                                COLDPName oldName = taxon.getName();
+                                taxon.setName(name);
+                                taxon.setParent(parent);
+                                taxon.fixHierarchy(false, true, true);
+                                coldp.deleteSynonym(synonym);
+                                synonym = coldp.newSynonym();
+                                synonym.setName(oldName);
+                                synonym.setTaxon(taxon);
+                                synonym.setReference(reference);
+                                synonym.setStatus("synonym");
+                                icl.setSynonym(synonym);
+                                if (reference != null
+                                        && icl.getConfirmation("Use current reference " + icl.getReference().toString() + "?")) {
+                                    taxon.setReference(icl.getReference());
+                                }
+                            }
+                        }
+                        break;
                     case "p":
                         if (icl.getTaxon() != null 
                             && icl.getTaxon().getParent() != null) {

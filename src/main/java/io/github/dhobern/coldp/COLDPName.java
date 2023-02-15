@@ -526,8 +526,12 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         String synonymRemarks = null;
         if (synonym != null) {
             synonymRemarks = safeTrim(renderType.linkURLs(synonym.getRemarks()));
+            COLDPReference reference = synonym.getReference();
             if(synonymRemarks == null && synonym.getStatus() != null && !synonym.getStatus().equalsIgnoreCase("synonym")) {
                 synonymRemarks = upperFirst(synonym.getStatus());
+            }
+            if(reference != null) {
+                synonymRemarks = (synonymRemarks == null ? "" : synonymRemarks + "; ") + reference.getAuthor() + ", " + reference.getIssued();
             }
         }
         if (synonymRemarks != null) {
