@@ -517,6 +517,10 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
         COLDPTaxon taxon = context.getCurrentTaxon();
         COLDPSynonym synonym = context.getCurrentSynonym();
         String nameRemarks = safeTrim(linkURLs(remarks));
+        boolean extinct = false;
+        if (taxon != null) {
+            extinct = taxon.isExtinct();
+        }
         
         String qualifier = "";
         if (synonym != null) {
@@ -544,7 +548,7 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
             context.addReference(reference);
         }
 
-        String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + renderType.wrapStrong(formatName(this, renderType));
+        String formatted = qualifier + upperFirst(getRank()) + synonymRemarks + ": " + renderType.wrapStrong(formatName(this, renderType, extinct));
         if(context.getContextType() == ContextType.Synonym 
                 && context.getCurrentSynonym() != null 
                 && context.getCurrentSynonym().getAccordingToID() != null) {
@@ -599,6 +603,10 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
     }    
 
     public static String formatName(COLDPName name, TreeRenderType renderType) {
+        return formatName(name, renderType, false);
+    }
+    
+    public static String formatName(COLDPName name, TreeRenderType renderType, boolean extinct) {
         String scientificName = name.getScientificName();
         if (name.getRank() != null) {
             switch (name.getRank()) {
@@ -630,6 +638,10 @@ public class COLDPName implements Comparable<COLDPName>, TreeRenderable {
             authorship = " " + authorship;
         }
 
+        if (extinct) {
+            scientificName = "†" + scientificName;
+        }
+        
         return scientificName + authorship;    
     }
 

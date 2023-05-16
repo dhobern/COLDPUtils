@@ -336,6 +336,10 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         return extinct;
     }
 
+    public void setExtinct(String extinct) {
+        this.extinct = extinct.equalsIgnoreCase("true");
+    }
+
     public void setExtinct(boolean extinct) {
         this.extinct = extinct;
     }
