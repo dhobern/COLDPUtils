@@ -303,6 +303,10 @@ public class COLDPTaxon implements Comparable<COLDPTaxon>, TreeRenderable {
         this.provisional = provisional;
     }
 
+    public void setProvisional(String provisional) {
+        this.provisional = provisional.equalsIgnoreCase("true");
+    }
+
     public String getReferenceID() {
         return reference == null ? referenceID : reference.getID();
     }
